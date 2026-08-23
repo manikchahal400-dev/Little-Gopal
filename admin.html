@@ -89,19 +89,11 @@
         <input id="admin-user" autocomplete="username" required />
         <label for="admin-pass">Password</label>
         <input id="admin-pass" type="password" autocomplete="current-password" required />
-        <button type="submit" id="login-submit">Continue</button>
+        <button type="submit" id="login-submit">Sign in</button>
         <div class="login-error" id="login-error"></div>
       </form>
 
-      <form id="otp-form" hidden>
-        <label for="otp-totp">Authenticator app code</label>
-        <input id="otp-totp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code" required autofocus />
-        <button type="submit" id="otp-submit">Verify and sign in</button>
-        <button type="button" id="otp-back" style="width:100%;border:1px solid #542d27;background:none;color:#542d27;border-radius:5px;padding:13px;margin-top:10px;font-weight:700;cursor:pointer">← Start over</button>
-        <div class="login-error" id="otp-error"></div>
-      </form>
-
-      <div class="login-hint" id="login-hint"><strong>Owner-only access, with 2-step verification.</strong> After your password, you'll be asked for the current 6-digit code from your authenticator app (Google Authenticator, Microsoft Authenticator, Authy, etc.). Passwords are only ever checked server-side against a stored hash, never in this page's code.</div>
+      <div class="login-hint" id="login-hint"><strong>Owner-only access.</strong> Your password is checked server-side against a stored hash — never in this page's code — with a temporary lockout after repeated wrong attempts.</div>
       <a class="login-back" href="index.html">← Back to shop</a>
     </div>
   </section>
@@ -197,8 +189,6 @@
 
     var loginScreen = document.getElementById('login-screen'), dashboard = document.getElementById('dashboard');
     var loginForm = document.getElementById('login-form'), loginSubmit = document.getElementById('login-submit'), loginError = document.getElementById('login-error');
-    var otpForm = document.getElementById('otp-form'), otpSubmit = document.getElementById('otp-submit'), otpError = document.getElementById('otp-error'), otpBack = document.getElementById('otp-back');
-    var currentChallenge = null;
 
     async function api(path, payload) {
       var controller = new AbortController();
@@ -227,69 +217,30 @@
       renderAll();
     }
 
-    function showOtpStep() {
-      loginForm.hidden = true;
-      otpForm.hidden = false;
-      document.getElementById('otp-totp').focus();
-    }
-    function showPasswordStep() {
-      otpForm.hidden = true;
-      loginForm.hidden = false;
-      otpForm.reset();
-      otpError.textContent = '';
-      currentChallenge = null;
-    }
-    otpBack.addEventListener('click', showPasswordStep);
-
     // If a valid session cookie already exists (e.g. page reloaded), skip straight to the dashboard.
     api('/api/auth/session').then(function (result) {
       if (result.ok && result.data.loggedIn) showDashboard();
-    }).catch(function () { /* API not deployed yet — stay on login screen */ });
+    }).catch(function () { /* backend unreachable — stay on login screen */ });
 
     loginForm.addEventListener('submit', function (event) {
       event.preventDefault();
       var username = document.getElementById('admin-user').value.trim();
       var password = document.getElementById('admin-pass').value;
       loginSubmit.disabled = true;
-      loginSubmit.textContent = 'Checking…';
+      loginSubmit.textContent = 'Signing in…';
       loginError.textContent = '';
       api('/api/auth/start', { username: username, password: password }).then(function (result) {
         loginSubmit.disabled = false;
-        loginSubmit.textContent = 'Continue';
-        if (result.ok && result.data.challenge) {
-          currentChallenge = result.data.challenge;
-          showOtpStep();
+        loginSubmit.textContent = 'Sign in';
+        if (result.ok) {
+          showDashboard();
         } else {
           loginError.textContent = (result.data && result.data.error) || 'Something went wrong. Please try again.';
         }
       }).catch(function (err) {
         loginSubmit.disabled = false;
-        loginSubmit.textContent = 'Continue';
+        loginSubmit.textContent = 'Sign in';
         loginError.textContent = (err && err.message) || 'Could not reach the login service. Is the site deployed with the /api backend?';
-      });
-    });
-
-    otpForm.addEventListener('submit', function (event) {
-      event.preventDefault();
-      if (!currentChallenge) { showPasswordStep(); return; }
-      var totpCode = document.getElementById('otp-totp').value.trim();
-      otpSubmit.disabled = true;
-      otpSubmit.textContent = 'Verifying…';
-      api('/api/auth/verify', { challenge: currentChallenge, totpCode: totpCode }).then(function (result) {
-        otpSubmit.disabled = false;
-        otpSubmit.textContent = 'Verify and sign in';
-        if (result.ok) {
-          showDashboard();
-        } else {
-          if (result.data && result.data.challenge) currentChallenge = result.data.challenge;
-          var extra = result.data && typeof result.data.attemptsLeft === 'number' ? ' (' + result.data.attemptsLeft + ' attempts left)' : '';
-          otpError.textContent = ((result.data && result.data.error) || 'Incorrect codes.') + extra;
-          if (result.data && result.data.attemptsLeft === 0) showPasswordStep();
-        }
-      }).catch(function (err) {
-        otpSubmit.disabled = false;
-        otpSubmit.textContent = 'Verify and sign in';
-        otpError.textContent = (err && err.message) || 'Could not reach the login service.';
       });
     });
 
@@ -297,7 +248,8 @@
       api('/api/auth/logout').finally(function () {
         dashboard.hidden = true;
         loginScreen.hidden = false;
-        showPasswordStep();
+        loginForm.reset();
+        loginError.textContent = '';
       });
     });
 
