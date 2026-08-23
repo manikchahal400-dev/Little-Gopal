@@ -100,6 +100,23 @@ function readJsonBody(req) {
   });
 }
 
+// Simple best-effort rate limiter shared by any endpoint that needs one.
+// Serverless instances are short-lived and not shared across regions, so
+// this slows down casual abuse rather than guaranteeing a hard cap — real
+// protection ultimately comes from the cryptographic checks in each
+// endpoint (password hash, payment signature), not this alone.
+const rateLimitBuckets = global.__lgRateLimits || (global.__lgRateLimits = new Map());
+function rateLimit(req, bucketName, maxRequests, windowMs) {
+  const ip = req.headers['x-forwarded-for'] || 'local';
+  const key = bucketName + ':' + ip;
+  const now = Date.now();
+  const record = rateLimitBuckets.get(key) || { count: 0, resetAt: now + windowMs };
+  if (now > record.resetAt) { record.count = 0; record.resetAt = now + windowMs; }
+  record.count += 1;
+  rateLimitBuckets.set(key, record);
+  return { limited: record.count > maxRequests, retryAfterMs: Math.max(record.resetAt - now, 0) };
+}
+
 function setCors(req, res) {
   const origin = process.env.ALLOWED_ORIGIN || '';
   if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
@@ -110,6 +127,6 @@ function setCors(req, res) {
 
 module.exports = {
   b64url, b64urlDecode, hmac, sha256, timingSafeEqualStr,
-  signToken, verifyToken, randomOtp, readJsonBody, setCors,
+  signToken, verifyToken, randomOtp, readJsonBody, setCors, rateLimit,
   base32Decode, verifyTotp
 };

@@ -11,6 +11,11 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  const limit = lib.rateLimit(req, 'verify', 20, 10 * 60 * 1000);
+  if (limit.limited) {
+    return res.status(429).json({ error: 'Too many requests. Please wait a moment and try again.', verified: false });
+  }
+
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!keySecret) return res.status(503).json({ error: 'Online payments are not configured yet.' });
 
