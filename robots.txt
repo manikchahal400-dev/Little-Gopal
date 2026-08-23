@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /api/
+Disallow: /checkout.html
+Disallow: /account.html
+Disallow: /order-success.html
+
+Sitemap: https://littlegopal.shop/sitemap.xml
