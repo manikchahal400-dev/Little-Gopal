@@ -201,14 +201,24 @@
     var currentChallenge = null;
 
     async function api(path, payload) {
-      var resp = await fetch(path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload || {})
-      });
-      var data = await resp.json().catch(function () { return {}; });
-      return { ok: resp.ok, data: data };
+      var controller = new AbortController();
+      var timeout = setTimeout(function () { controller.abort(); }, 12000);
+      try {
+        var resp = await fetch(path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload || {}),
+          signal: controller.signal
+        });
+        var data = await resp.json().catch(function () { return {}; });
+        return { ok: resp.ok, data: data };
+      } catch (err) {
+        if (err && err.name === 'AbortError') throw new Error('The request took too long and timed out. Please check your connection and try again.');
+        throw err;
+      } finally {
+        clearTimeout(timeout);
+      }
     }
 
     function showDashboard() {
@@ -241,7 +251,7 @@
       var username = document.getElementById('admin-user').value.trim();
       var password = document.getElementById('admin-pass').value;
       loginSubmit.disabled = true;
-      loginSubmit.textContent = 'Sending codes…';
+      loginSubmit.textContent = 'Checking…';
       loginError.textContent = '';
       api('/api/auth/start', { username: username, password: password }).then(function (result) {
         loginSubmit.disabled = false;
@@ -252,10 +262,10 @@
         } else {
           loginError.textContent = (result.data && result.data.error) || 'Something went wrong. Please try again.';
         }
-      }).catch(function () {
+      }).catch(function (err) {
         loginSubmit.disabled = false;
         loginSubmit.textContent = 'Continue';
-        loginError.textContent = 'Could not reach the login service. Is the site deployed with the /api backend?';
+        loginError.textContent = (err && err.message) || 'Could not reach the login service. Is the site deployed with the /api backend?';
       });
     });
 
@@ -276,10 +286,10 @@
           otpError.textContent = ((result.data && result.data.error) || 'Incorrect codes.') + extra;
           if (result.data && result.data.attemptsLeft === 0) showPasswordStep();
         }
-      }).catch(function () {
+      }).catch(function (err) {
         otpSubmit.disabled = false;
         otpSubmit.textContent = 'Verify and sign in';
-        otpError.textContent = 'Could not reach the login service.';
+        otpError.textContent = (err && err.message) || 'Could not reach the login service.';
       });
     });
 
