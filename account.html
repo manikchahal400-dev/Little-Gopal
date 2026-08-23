@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>My Account | Little Gopal</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%AA%B7%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
@@ -49,7 +50,15 @@
   .empty-orders span{display:block;font-size:13px;color:#735850;margin-top:6px;line-height:1.5}
   .empty-orders a{display:inline-block;margin-top:16px;background:var(--maroon);color:#fff;text-decoration:none;padding:11px 18px;border-radius:4px;font-weight:700;font-size:13px}
   .login-card p{font-size:13px;color:#74544e;line-height:1.6;margin:0 0 6px}
-  @media(max-width:820px){.layout{grid-template-columns:1fr}}
+  .wishlist-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .wish-card{position:relative;background:#fffdf9;border:1px solid #edddc9;border-radius:8px;padding:14px;text-align:center;text-decoration:none;color:var(--ink);transition:.2s}
+  .wish-card:hover{transform:translateY(-3px);box-shadow:0 8px 16px #55352b1a}
+  .wish-card .ico{font-size:52px}
+  .wish-card h4{font:600 14px "Playfair Display";margin:8px 0 3px}
+  .wish-card .p{color:#a45331;font-weight:700;font-size:12.5px}
+  .wish-remove{position:absolute;right:8px;top:8px;border:0;background:#fff;border-radius:50%;width:26px;height:26px;color:#b44b32;cursor:pointer;box-shadow:0 2px 6px #55352b22}
+  .empty-wishlist{text-align:center;color:#8a6a61;padding:20px}
+  @media(max-width:820px){.layout{grid-template-columns:1fr}.wishlist-grid{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:430px){.wrap{padding:0 17px}}
 </style>
 </head>
@@ -79,6 +88,12 @@
       <h2>Order history</h2>
       <p class="hint">Orders placed from this browser appear here with their current status.</p>
       <div id="orders-container"></div>
+    </div>
+
+    <div class="card" style="grid-column:1/-1">
+      <h2>My wishlist</h2>
+      <p class="hint">Products you've saved for later.</p>
+      <div class="wishlist-grid" id="wishlist-container"></div>
     </div>
   </main>
 
@@ -142,8 +157,25 @@
       }).join('');
     }
 
+    function renderWishlist() {
+      var ids = Store.getWishlist();
+      var container = document.getElementById('wishlist-container');
+      if (!ids.length) { container.innerHTML = '<p class="empty-wishlist" style="grid-column:1/-1">Nothing saved yet. Tap the ♡ on any product to add it here.</p>'; return; }
+      var products = ids.map(function (id) { return Store.getProductById(id); }).filter(Boolean);
+      container.innerHTML = products.map(function (p) {
+        return '<div style="position:relative"><a class="wish-card" href="product.html?id=' + encodeURIComponent(p.id) + '"><div class="ico">' + p.icon + '</div><h4>' + Store.escapeHtml(p.name) + '</h4><div class="p">' + Store.formatMoney(p.price) + '</div></a><button class="wish-remove" data-id="' + p.id + '" aria-label="Remove from wishlist">✕</button></div>';
+      }).join('');
+    }
+    document.getElementById('wishlist-container').addEventListener('click', function (event) {
+      var btn = event.target.closest('.wish-remove');
+      if (!btn) return;
+      Store.toggleWishlist(btn.dataset.id);
+      renderWishlist();
+    });
+
     loadCustomer();
     renderOrders();
+    renderWishlist();
   </script>
 </body>
 </html>

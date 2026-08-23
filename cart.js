@@ -8,6 +8,8 @@
   var CUSTOMER_KEY = 'littleGopalCustomer';
   var ORDERS_KEY = 'littleGopalOrders';
   var PRODUCTS_KEY = 'littleGopalProducts';
+  var WISHLIST_KEY = 'littleGopalWishlist';
+  var REVIEWS_KEY = 'littleGopalReviews';
   var COUPONS = { GOPAL10: 0.10 };
   var FREE_SHIPPING_FROM = 999;
   var SHIPPING_FEE = 49;
@@ -180,6 +182,44 @@
     });
   }
 
+  // --- Wishlist ---
+  function getWishlist() { return readJSON(WISHLIST_KEY, []); }
+  function isWishlisted(productId) { return getWishlist().indexOf(productId) !== -1; }
+  function toggleWishlist(productId) {
+    var list = getWishlist();
+    var idx = list.indexOf(productId);
+    if (idx === -1) list.push(productId); else list.splice(idx, 1);
+    localStorage.setItem(WISHLIST_KEY, JSON.stringify(list));
+    return idx === -1; // true if it was just added
+  }
+
+  // --- Reviews & ratings ---
+  function getAllReviews() { return readJSON(REVIEWS_KEY, {}); }
+  function getReviews(productId) { return getAllReviews()[productId] || []; }
+  function addReview(productId, review) {
+    var all = getAllReviews();
+    all[productId] = all[productId] || [];
+    all[productId].unshift({
+      name: review.name || 'A devotee',
+      rating: Math.max(1, Math.min(5, Math.round(review.rating) || 5)),
+      comment: review.comment || '',
+      date: new Date().toISOString()
+    });
+    localStorage.setItem(REVIEWS_KEY, JSON.stringify(all));
+  }
+  function getRatingSummary(productId) {
+    var reviews = getReviews(productId);
+    if (!reviews.length) return { count: 0, average: 0 };
+    var sum = reviews.reduce(function (s, r) { return s + r.rating; }, 0);
+    return { count: reviews.length, average: Math.round((sum / reviews.length) * 10) / 10 };
+  }
+  function starsHtml(rating, size) {
+    var full = Math.round(rating);
+    var out = '';
+    for (var i = 1; i <= 5; i++) out += '<span style="color:' + (i <= full ? '#d59d36' : '#ddd0bd') + (size ? ';font-size:' + size : '') + '">★</span>';
+    return out;
+  }
+
   function getCustomer() { return readJSON(CUSTOMER_KEY, null); }
   function saveCustomer(customer) { localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer)); }
 
@@ -317,6 +357,8 @@
     getOrders: getOrders, placeOrder: placeOrder, getOrder: getOrder, updateOrderStatus: updateOrderStatus, makeOrderId: makeOrderId,
     getProducts: getProducts, addProduct: addProduct, updateProduct: updateProduct, deleteProduct: deleteProduct,
     getProductsByCategory: getProductsByCategory, getFeaturedProducts: getFeaturedProducts,
-    getProductById: getProductById, getProductByName: getProductByName, searchProducts: searchProducts
+    getProductById: getProductById, getProductByName: getProductByName, searchProducts: searchProducts,
+    getWishlist: getWishlist, isWishlisted: isWishlisted, toggleWishlist: toggleWishlist,
+    getReviews: getReviews, addReview: addReview, getRatingSummary: getRatingSummary, starsHtml: starsHtml
   };
 })();
