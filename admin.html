@@ -150,11 +150,21 @@
             <p class="hint">Fill these in and it appears on your website right away. Price can also be changed anytime directly in the list on the right.</p>
             <form class="prod-form" id="form">
               <input type="hidden" id="p-id">
+              <input type="hidden" id="p-image">
               <label for="p-name">Product name</label>
               <input id="p-name" required placeholder="e.g. Silver Peacock Mukut">
+              <label for="p-image-file">Product image</label>
+              <div id="image-drop" style="border:2px dashed #dfcdb8;border-radius:8px;padding:14px;text-align:center;cursor:pointer;background:#fffdf9">
+                <div id="image-preview-wrap" style="display:none;align-items:center;gap:12px;justify-content:center">
+                  <img id="image-preview" style="width:70px;height:70px;object-fit:cover;border-radius:6px;box-shadow:0 2px 6px #55352b22">
+                  <button type="button" id="image-remove" style="border:0;background:#f6e6da;color:#a34b2a;padding:7px 11px;border-radius:5px;font-weight:700;cursor:pointer;font-size:12px;margin:0">Remove</button>
+                </div>
+                <div id="image-placeholder" style="color:#8a6a61;font-size:13px">📷 Click to upload a photo (or leave blank to use the emoji icon)</div>
+                <input type="file" id="p-image-file" accept="image/*" style="display:none">
+              </div>
               <div class="row2">
                 <div><label for="p-price">Price (₹)</label><input id="p-price" type="number" min="0" required></div>
-                <div><label for="p-icon">Icon (emoji)</label><input id="p-icon" placeholder="🛍️" maxlength="4"></div>
+                <div><label for="p-icon">Icon (emoji fallback)</label><input id="p-icon" placeholder="🛍️" maxlength="4"></div>
               </div>
               <label for="p-category">Category</label>
               <select id="p-category"></select>
@@ -325,6 +335,38 @@
     var prodForm = document.getElementById('form'), formTitle = document.getElementById('prod-form-title'),
       formSubmit = document.getElementById('form-submit'), formCancel = document.getElementById('form-cancel');
 
+    // Product image upload — resized/compressed client-side, stored as the product's photo.
+    var imageDrop = document.getElementById('image-drop'), imageFile = document.getElementById('p-image-file'),
+      imageHidden = document.getElementById('p-image'), imagePreviewWrap = document.getElementById('image-preview-wrap'),
+      imagePreview = document.getElementById('image-preview'), imagePlaceholder = document.getElementById('image-placeholder'),
+      imageRemoveBtn = document.getElementById('image-remove');
+
+    function setImagePreview(dataUri) {
+      imageHidden.value = dataUri || '';
+      if (dataUri) {
+        imagePreview.src = dataUri;
+        imagePreviewWrap.style.display = 'flex';
+        imagePlaceholder.style.display = 'none';
+      } else {
+        imagePreviewWrap.style.display = 'none';
+        imagePlaceholder.style.display = 'block';
+      }
+    }
+
+    imageDrop.addEventListener('click', function (event) { if (event.target !== imageRemoveBtn) imageFile.click(); });
+    imageFile.addEventListener('change', function () {
+      var file = imageFile.files[0];
+      if (!file) return;
+      imagePlaceholder.textContent = 'Processing image…';
+      Store.compressImage(file, 640, 0.75).then(function (dataUri) {
+        setImagePreview(dataUri);
+        imagePlaceholder.textContent = '📷 Click to upload a photo (or leave blank to use the emoji icon)';
+      }).catch(function () {
+        imagePlaceholder.textContent = 'Could not read that image — please try another file.';
+      });
+    });
+    imageRemoveBtn.addEventListener('click', function (event) { event.stopPropagation(); setImagePreview(''); imageFile.value = ''; });
+
     function parseList(value) { return value.split(',').map(function (s) { return s.trim(); }).filter(Boolean); }
 
     function renderProducts() {
@@ -332,7 +374,8 @@
       var list = document.getElementById('product-list');
       document.getElementById('prod-count').textContent = items.length;
       list.innerHTML = items.length ? items.map(function (p) {
-        return '<div class="prod-row"><div><strong>' + p.icon + ' ' + Store.escapeHtml(p.name) + '</strong> — ' +
+        var thumb = p.image ? '<img src="' + p.image + '" style="width:28px;height:28px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:5px">' : p.icon + ' ';
+        return '<div class="prod-row"><div><strong>' + thumb + Store.escapeHtml(p.name) + '</strong> — ' +
           '<span class="price-edit" data-id="' + p.id + '" title="Click to change price">' + Store.formatMoney(p.price) + ' ✎</span>' +
           (p.featured ? ' · <span style="color:#6a8462">Featured</span>' : '') + (p.inStock === false ? ' · <span style="color:#b44b32">Out of stock</span>' : '') +
           '<small>' + Store.escapeHtml(Store.CATEGORIES[p.category] || p.category) + '</small></div>' +
@@ -379,6 +422,7 @@
       formSubmit.textContent = 'Add product';
       formCancel.hidden = true;
       setMoreOptions(false);
+      setImagePreview('');
     }
 
     prodForm.addEventListener('submit', function (event) {
@@ -389,6 +433,7 @@
         price: document.getElementById('p-price').value,
         category: categorySelect.value,
         icon: document.getElementById('p-icon').value.trim() || '🛍️',
+        image: imageHidden.value,
         badge: document.getElementById('p-badge').value,
         description: document.getElementById('p-description').value.trim(),
         sizes: parseList(document.getElementById('p-sizes').value),
@@ -416,6 +461,7 @@
         document.getElementById('p-price').value = p.price;
         categorySelect.value = p.category;
         document.getElementById('p-icon').value = p.icon || '';
+        setImagePreview(p.image || '');
         document.getElementById('p-badge').value = p.badge || '';
         document.getElementById('p-description').value = p.description || '';
         document.getElementById('p-sizes').value = (p.sizes || []).join(', ');

@@ -149,7 +149,7 @@
     var id = product.id || (slugify(product.name) + '-' + Date.now().toString(36));
     var full = {
       id: id, name: product.name, price: toNumber(product.price), category: product.category,
-      icon: product.icon || '🛍️', badge: product.badge || '', featured: !!product.featured,
+      icon: product.icon || '🛍️', image: product.image || '', badge: product.badge || '', featured: !!product.featured,
       description: product.description || '', sizes: product.sizes || [], colors: product.colors || [],
       inStock: product.inStock !== false
     };
@@ -213,6 +213,39 @@
     var sum = reviews.reduce(function (s, r) { return s + r.rating; }, 0);
     return { count: reviews.length, average: Math.round((sum / reviews.length) * 10) / 10 };
   }
+  // Resizes/compresses an uploaded image file client-side (no server) and
+  // resolves with a JPEG data URI, so product photos stay small enough for
+  // localStorage. maxDim caps the longest side in pixels.
+  function compressImage(file, maxDim, quality) {
+    maxDim = maxDim || 640; quality = quality || 0.75;
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = function () {
+        var img = new Image();
+        img.onerror = reject;
+        img.onload = function () {
+          var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          var w = Math.max(1, Math.round(img.width * scale));
+          var h = Math.max(1, Math.round(img.height * scale));
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Returns an <img> tag if the product has a real photo, otherwise the emoji icon as plain text.
+  function visualHtml(p) {
+    if (p && p.image) return '<img src="' + p.image + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
+    return (p && p.icon) || '🛍️';
+  }
+
   function starsHtml(rating, size) {
     var full = Math.round(rating);
     var out = '';
@@ -359,6 +392,7 @@
     getProductsByCategory: getProductsByCategory, getFeaturedProducts: getFeaturedProducts,
     getProductById: getProductById, getProductByName: getProductByName, searchProducts: searchProducts,
     getWishlist: getWishlist, isWishlisted: isWishlisted, toggleWishlist: toggleWishlist,
-    getReviews: getReviews, addReview: addReview, getRatingSummary: getRatingSummary, starsHtml: starsHtml
+    getReviews: getReviews, addReview: addReview, getRatingSummary: getRatingSummary, starsHtml: starsHtml,
+    visualHtml: visualHtml, compressImage: compressImage
   };
 })();

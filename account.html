@@ -53,7 +53,7 @@
   .wishlist-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
   .wish-card{position:relative;background:#fffdf9;border:1px solid #edddc9;border-radius:8px;padding:14px;text-align:center;text-decoration:none;color:var(--ink);transition:.2s}
   .wish-card:hover{transform:translateY(-3px);box-shadow:0 8px 16px #55352b1a}
-  .wish-card .ico{font-size:52px}
+  .wish-card .ico{font-size:52px;height:65px;display:grid;place-items:center;overflow:hidden;border-radius:6px}
   .wish-card h4{font:600 14px "Playfair Display";margin:8px 0 3px}
   .wish-card .p{color:#a45331;font-weight:700;font-size:12.5px}
   .wish-remove{position:absolute;right:8px;top:8px;border:0;background:#fff;border-radius:50%;width:26px;height:26px;color:#b44b32;cursor:pointer;box-shadow:0 2px 6px #55352b22}
@@ -163,7 +163,7 @@
       if (!ids.length) { container.innerHTML = '<p class="empty-wishlist" style="grid-column:1/-1">Nothing saved yet. Tap the ♡ on any product to add it here.</p>'; return; }
       var products = ids.map(function (id) { return Store.getProductById(id); }).filter(Boolean);
       container.innerHTML = products.map(function (p) {
-        return '<div style="position:relative"><a class="wish-card" href="product.html?id=' + encodeURIComponent(p.id) + '"><div class="ico">' + p.icon + '</div><h4>' + Store.escapeHtml(p.name) + '</h4><div class="p">' + Store.formatMoney(p.price) + '</div></a><button class="wish-remove" data-id="' + p.id + '" aria-label="Remove from wishlist">✕</button></div>';
+        return '<div style="position:relative"><a class="wish-card" href="product.html?id=' + encodeURIComponent(p.id) + '"><div class="ico">' + Store.visualHtml(p) + '</div><h4>' + Store.escapeHtml(p.name) + '</h4><div class="p">' + Store.formatMoney(p.price) + '</div></a><button class="wish-remove" data-id="' + p.id + '" aria-label="Remove from wishlist">✕</button></div>';
       }).join('');
     }
     document.getElementById('wishlist-container').addEventListener('click', function (event) {
