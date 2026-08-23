@@ -15,6 +15,7 @@
   var SHIPPING_FEE = 49;
 
   var CATEGORIES = {
+    gopalji: 'Laddu Gopal ji',
     clothes: 'Divine Clothes',
     beauty: 'Beauty',
     natural: 'Natural Beauty',
@@ -24,6 +25,7 @@
     electric: 'Electric Items'
   };
   var CATEGORY_INTROS = {
+    gopalji: 'Bring home your own Laddu Gopal ji, in the size that\'s right for your mandir — from a tiny size 0 to a grand size 20.',
     clothes: 'Graceful poshaks and dresses for Krishna ji and Radha Rani.',
     beauty: 'Beautiful adornments and seva essentials for the daily shringar of your beloved Thakur ji.',
     natural: 'Pure and gentle seva products, chosen for daily shringar.',
@@ -34,6 +36,11 @@
   };
 
   var DEFAULT_PRODUCTS = [
+    { id: 'laddu-gopal-ji', name: 'Laddu Gopal ji', price: 501, category: 'gopalji', icon: '🪷', badge: 'NEW', featured: true,
+      description: 'Bring home your very own Laddu Gopal ji. Choose the size that suits your mandir — larger sizes are lovingly handcrafted and priced accordingly.',
+      sizes: ['Size 0','Size 1','Size 2','Size 3','Size 4','Size 5','Size 6','Size 7','Size 8','Size 9','Size 10','Size 11','Size 12','Size 13','Size 14','Size 15','Size 16','Size 17','Size 18','Size 19','Size 20'],
+      sizePrices: { 'Size 0':501,'Size 1':651,'Size 2':801,'Size 3':999,'Size 4':1199,'Size 5':1499,'Size 6':1799,'Size 7':2199,'Size 8':2599,'Size 9':2999,'Size 10':3499,'Size 11':3999,'Size 12':4599,'Size 13':5199,'Size 14':5899,'Size 15':6599,'Size 16':7399,'Size 17':8299,'Size 18':9299,'Size 19':10499,'Size 20':11999 },
+      colors: [], inStock: true },
     { id: 'royal-krishna-poshak', name: 'Royal Krishna Poshak', price: 499, category: 'clothes', icon: '👑', badge: 'BESTSELLER', featured: true, description: 'A graceful poshak for Krishna ji, chosen for daily seva and festive darshan.', sizes: ['Small', 'Medium', 'Large'], colors: ['Classic', 'Pink', 'Yellow'], inStock: true },
     { id: 'velvet-winter-poshak', name: 'Velvet Winter Poshak', price: 650, category: 'clothes', icon: '🧥', badge: '', featured: false, description: 'A warm velvet poshak for winter seva.', sizes: ['Small', 'Medium', 'Large'], colors: ['Classic'], inStock: true },
     { id: 'radha-rani-lehenga', name: 'Radha Rani Lehenga', price: 799, category: 'clothes', icon: '🥻', badge: '', featured: false, description: 'A beautifully embroidered lehenga for Radha Rani.', sizes: ['Small', 'Medium', 'Large'], colors: ['Pink', 'Yellow'], inStock: true },
@@ -140,7 +147,21 @@
   }
   function getProducts() {
     var stored = readJSON(PRODUCTS_KEY, null);
-    if (!stored) { stored = DEFAULT_PRODUCTS.slice(); localStorage.setItem(PRODUCTS_KEY, JSON.stringify(stored)); }
+    if (!stored) {
+      stored = DEFAULT_PRODUCTS.slice();
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(stored));
+      return stored;
+    }
+    // Add any new catalog products introduced since this browser last saved
+    // its list (e.g. after a site update), without touching anything the
+    // owner has already added, edited, or deleted.
+    var existingIds = {};
+    stored.forEach(function (p) { existingIds[p.id] = true; });
+    var missing = DEFAULT_PRODUCTS.filter(function (p) { return !existingIds[p.id]; });
+    if (missing.length) {
+      stored = stored.concat(missing);
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(stored));
+    }
     return stored;
   }
   function saveProducts(list) { localStorage.setItem(PRODUCTS_KEY, JSON.stringify(list)); }
@@ -151,7 +172,7 @@
       id: id, name: product.name, price: toNumber(product.price), category: product.category,
       icon: product.icon || '🛍️', image: product.image || '', badge: product.badge || '', featured: !!product.featured,
       description: product.description || '', sizes: product.sizes || [], colors: product.colors || [],
-      inStock: product.inStock !== false
+      sizePrices: product.sizePrices || null, inStock: product.inStock !== false
     };
     list.push(full);
     saveProducts(list);
