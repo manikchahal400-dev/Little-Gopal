@@ -116,7 +116,7 @@
               </div>
             </label>
           </div>
-          <div class="demo-note"><strong>Demo store notice —</strong> this is a static, front-end-only site running in Razorpay <em>test mode</em> with a public sample key, so no real money moves and no card details are stored anywhere. To accept genuine payments: create a Razorpay (or similar) merchant account, generate your own Key ID, create orders server-side via the Orders API, and verify the payment signature on your backend before confirming an order.</div>
+          <div class="demo-note"><strong>Secure checkout —</strong> your payment is processed directly by Razorpay. We never see or store your card, UPI, or bank details, and every payment is independently verified on our server before an order is confirmed.</div>
         </div>
       </div>
 
@@ -252,36 +252,69 @@
         return;
       }
 
-      // Razorpay test-mode checkout. Replace with your own Key ID (and a
-      // server-created order + signature verification) before going live.
+      // Real Razorpay checkout: the order is created server-side (with the
+      // secret key, never exposed here), and the payment is independently
+      // re-verified server-side before the order is ever marked Paid.
       placeBtn.disabled = true;
       placeBtn.textContent = 'Loading secure checkout…';
       loadRazorpayScript(function (loaded) {
-        placeBtn.disabled = false;
-        placeBtn.textContent = 'Place order';
-        if (!loaded) { alert('Could not load the payment gateway. Please check your connection or choose Cash on Delivery.'); return; }
-        var name = document.getElementById('full-name').value.trim();
-        var email = document.getElementById('email').value.trim();
-        var phone = document.getElementById('phone').value.trim();
-        var rzp = new Razorpay({
-          key: 'rzp_test_1DP5mmOlF5G5ag', // Razorpay's public sample test key — replace with your own merchant Key ID
-          amount: Math.round(totals.total * 100),
-          currency: 'INR',
-          name: 'Little Gopal',
-          description: 'Order for ' + totals.cart.length + ' item(s)',
-          prefill: { name: name, email: email, contact: phone },
-          theme: { color: '#542d27' },
-          handler: function (response) {
-            completeOrder(buildOrder('Online payment (Razorpay)', 'Paid', response.razorpay_payment_id));
-          },
-          modal: {
-            ondismiss: function () { /* user closed the payment window */ }
-          }
-        });
-        rzp.on('payment.failed', function (response) {
-          alert('Payment failed: ' + (response.error && response.error.description ? response.error.description : 'please try again.'));
-        });
-        rzp.open();
+        if (!loaded) {
+          placeBtn.disabled = false; placeBtn.textContent = 'Place order';
+          alert('Could not load the payment gateway. Please check your connection or choose Cash on Delivery.');
+          return;
+        }
+        fetch('/api/payment/create-order', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: totals.total })
+        }).then(function (resp) { return resp.json().then(function (data) { return { ok: resp.ok, data: data }; }); })
+          .then(function (result) {
+            placeBtn.disabled = false; placeBtn.textContent = 'Place order';
+            if (!result.ok || !result.data.orderId) {
+              alert((result.data && result.data.error) || 'Could not start the payment. Please try again or choose Cash on Delivery.');
+              return;
+            }
+            var name = document.getElementById('full-name').value.trim();
+            var email = document.getElementById('email').value.trim();
+            var phone = document.getElementById('phone').value.trim();
+            var rzp = new Razorpay({
+              key: result.data.keyId,
+              order_id: result.data.orderId,
+              amount: result.data.amount,
+              currency: result.data.currency,
+              name: 'Little Gopal',
+              description: 'Order for ' + totals.cart.length + ' item(s)',
+              prefill: { name: name, email: email, contact: phone },
+              theme: { color: '#542d27' },
+              handler: function (response) {
+                fetch('/api/payment/verify', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature
+                  })
+                }).then(function (r) { return r.json(); }).then(function (verifyData) {
+                  if (verifyData.verified) {
+                    completeOrder(buildOrder('Online payment (Razorpay)', 'Paid', response.razorpay_payment_id));
+                  } else {
+                    alert('Payment could not be verified. No order has been placed. If money was deducted, please contact us with your payment ID: ' + response.razorpay_payment_id);
+                  }
+                }).catch(function () {
+                  alert('Could not verify the payment. If money was deducted, please contact us with your payment ID: ' + response.razorpay_payment_id);
+                });
+              },
+              modal: {
+                ondismiss: function () { /* user closed the payment window */ }
+              }
+            });
+            rzp.on('payment.failed', function (response) {
+              alert('Payment failed: ' + (response.error && response.error.description ? response.error.description : 'please try again.'));
+            });
+            rzp.open();
+          }).catch(function () {
+            placeBtn.disabled = false; placeBtn.textContent = 'Place order';
+            alert('Could not reach the payment service. Please try again or choose Cash on Delivery.');
+          });
       });
     });
   </script>
