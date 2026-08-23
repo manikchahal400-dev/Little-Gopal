@@ -1,7 +1,7 @@
-/* Step 1 of admin login: verify username + password, then send a WhatsApp
-   OTP and an email OTP. Returns only an opaque signed "challenge" token —
-   the actual OTP codes are never sent back to the browser, only delivered
-   via WhatsApp and email. */
+/* Step 1 of admin login: verify username + password server-side.
+   On success, returns a short-lived signed "challenge" proving the
+   password step passed, which step 2 (verify.js) requires along with a
+   6-digit code from an authenticator app. */
 const lib = require('../_lib');
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -10,7 +10,7 @@ const LOGIN_LOCK_MS = 5 * 60 * 1000;
 
 // Simple in-memory lockout tracker. Serverless instances are short-lived and
 // may be recycled, so this is a best-effort layer, not the only defence —
-// the OTP + password hashing is what actually protects the account.
+// the password hashing + TOTP code are what actually protect the account.
 const attemptsByKey = global.__lgAttempts || (global.__lgAttempts = new Map());
 
 module.exports = async function handler(req, res) {
@@ -42,25 +42,6 @@ module.exports = async function handler(req, res) {
   }
   attemptsByKey.set(key, { count: 0, lockUntil: 0 });
 
-  const whatsappOtp = lib.randomOtp();
-  const emailOtp = lib.randomOtp();
-  const pepper = process.env.OTP_SECRET;
-
-  try {
-    await Promise.all([
-      lib.sendWhatsApp(process.env.ADMIN_WHATSAPP_TO, `Little Gopal admin login — your WhatsApp verification code is ${whatsappOtp}. It expires in 5 minutes. Never share this code.`),
-      lib.sendEmail(process.env.ADMIN_EMAIL_TO, 'Little Gopal admin login — email verification code', `Your email verification code is ${emailOtp}. It expires in 5 minutes. Never share this code.`)
-    ]);
-  } catch (err) {
-    return res.status(502).json({ error: 'Could not send verification codes. ' + err.message });
-  }
-
-  const challenge = lib.signToken({
-    exp: now + CHALLENGE_TTL_MS,
-    wh: lib.sha256(whatsappOtp + pepper),
-    eh: lib.sha256(emailOtp + pepper),
-    att: 0
-  }, pepper);
-
+  const challenge = lib.signToken({ exp: now + CHALLENGE_TTL_MS, att: 0 }, process.env.OTP_SECRET);
   return res.status(200).json({ challenge });
 };

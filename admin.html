@@ -94,16 +94,14 @@
       </form>
 
       <form id="otp-form" hidden>
-        <label for="otp-whatsapp">WhatsApp verification code</label>
-        <input id="otp-whatsapp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code" required />
-        <label for="otp-email">Email verification code</label>
-        <input id="otp-email" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code" required />
+        <label for="otp-totp">Authenticator app code</label>
+        <input id="otp-totp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code" required autofocus />
         <button type="submit" id="otp-submit">Verify and sign in</button>
         <button type="button" id="otp-back" style="width:100%;border:1px solid #542d27;background:none;color:#542d27;border-radius:5px;padding:13px;margin-top:10px;font-weight:700;cursor:pointer">← Start over</button>
         <div class="login-error" id="otp-error"></div>
       </form>
 
-      <div class="login-hint" id="login-hint"><strong>Owner-only access, with 2-step verification.</strong> After your password, a one-time code is sent to the owner's WhatsApp and a second one to the owner's email — both are required to sign in. Passwords are only ever checked server-side against a stored hash, never in this page's code. See the note below for what this does and doesn't protect against.</div>
+      <div class="login-hint" id="login-hint"><strong>Owner-only access, with 2-step verification.</strong> After your password, you'll be asked for the current 6-digit code from your authenticator app (Google Authenticator, Microsoft Authenticator, Authy, etc.). Passwords are only ever checked server-side against a stored hash, never in this page's code.</div>
       <a class="login-back" href="index.html">← Back to shop</a>
     </div>
   </section>
@@ -222,7 +220,7 @@
     function showOtpStep() {
       loginForm.hidden = true;
       otpForm.hidden = false;
-      document.getElementById('otp-whatsapp').focus();
+      document.getElementById('otp-totp').focus();
     }
     function showPasswordStep() {
       otpForm.hidden = true;
@@ -264,11 +262,10 @@
     otpForm.addEventListener('submit', function (event) {
       event.preventDefault();
       if (!currentChallenge) { showPasswordStep(); return; }
-      var whatsappCode = document.getElementById('otp-whatsapp').value.trim();
-      var emailCode = document.getElementById('otp-email').value.trim();
+      var totpCode = document.getElementById('otp-totp').value.trim();
       otpSubmit.disabled = true;
       otpSubmit.textContent = 'Verifying…';
-      api('/api/auth/verify', { challenge: currentChallenge, whatsappCode: whatsappCode, emailCode: emailCode }).then(function (result) {
+      api('/api/auth/verify', { challenge: currentChallenge, totpCode: totpCode }).then(function (result) {
         otpSubmit.disabled = false;
         otpSubmit.textContent = 'Verify and sign in';
         if (result.ok) {

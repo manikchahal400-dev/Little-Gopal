@@ -47,6 +47,46 @@ function randomOtp() {
   return String(crypto.randomInt(0, 1000000)).padStart(6, '0');
 }
 
+// --- TOTP (RFC 6238) — authenticator app codes, no third-party service needed ---
+const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+function base32Decode(input) {
+  const clean = String(input).toUpperCase().replace(/[^A-Z2-7]/g, '');
+  let bits = '';
+  for (const char of clean) {
+    const val = BASE32_ALPHABET.indexOf(char);
+    if (val === -1) continue;
+    bits += val.toString(2).padStart(5, '0');
+  }
+  const bytes = [];
+  for (let i = 0; i + 8 <= bits.length; i += 8) bytes.push(parseInt(bits.slice(i, i + 8), 2));
+  return Buffer.from(bytes);
+}
+
+function hotp(secretBytes, counter, digits) {
+  const buf = Buffer.alloc(8);
+  buf.writeBigUInt64BE(BigInt(counter));
+  const hmacDigest = crypto.createHmac('sha1', secretBytes).update(buf).digest();
+  const offset = hmacDigest[hmacDigest.length - 1] & 0xf;
+  const binCode = ((hmacDigest[offset] & 0x7f) << 24) | ((hmacDigest[offset + 1] & 0xff) << 16) |
+    ((hmacDigest[offset + 2] & 0xff) << 8) | (hmacDigest[offset + 3] & 0xff);
+  return String(binCode % 10 ** digits).padStart(digits, '0');
+}
+
+// Verifies a 6-digit authenticator app code, tolerating +/- 1 time step (30s each)
+// for clock drift between the server and the phone.
+function verifyTotp(secretBase32, code, digits = 6, stepSeconds = 30, window = 1) {
+  const cleanCode = String(code).trim();
+  if (!/^\d{6}$/.test(cleanCode)) return false;
+  const secretBytes = base32Decode(secretBase32);
+  const counter = Math.floor(Date.now() / 1000 / stepSeconds);
+  for (let errorWindow = -window; errorWindow <= window; errorWindow++) {
+    const expected = hotp(secretBytes, counter + errorWindow, digits);
+    if (timingSafeEqualStr(expected, cleanCode)) return true;
+  }
+  return false;
+}
+
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     if (req.body) {
@@ -68,47 +108,8 @@ function setCors(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-async function sendWhatsApp(toNumber, body) {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_WHATSAPP_FROM; // e.g. "whatsapp:+14155238886"
-  const to = 'whatsapp:' + toNumber; // toNumber must include country code, e.g. +919258358235
-  const params = new URLSearchParams({ To: to, From: from, Body: body });
-  const resp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Basic ' + Buffer.from(sid + ':' + token).toString('base64'),
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: params.toString()
-  });
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error('Twilio WhatsApp send failed: ' + resp.status + ' ' + text);
-  }
-}
-
-async function sendEmail(toEmail, subject, text) {
-  const apiKey = process.env.SENDGRID_API_KEY;
-  const from = process.env.SENDGRID_FROM;
-  const resp = await fetch('https://api.sendgrid.com/v3/mail/send', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      personalizations: [{ to: [{ email: toEmail }] }],
-      from: { email: from, name: 'Little Gopal Admin' },
-      subject: subject,
-      content: [{ type: 'text/plain', value: text }]
-    })
-  });
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error('SendGrid send failed: ' + resp.status + ' ' + errText);
-  }
-}
-
 module.exports = {
   b64url, b64urlDecode, hmac, sha256, timingSafeEqualStr,
   signToken, verifyToken, randomOtp, readJsonBody, setCors,
-  sendWhatsApp, sendEmail
+  base32Decode, verifyTotp
 };
