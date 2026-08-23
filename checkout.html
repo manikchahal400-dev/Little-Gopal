@@ -88,8 +88,8 @@
           <label for="address">Address</label>
           <textarea id="address" required placeholder="House no., street, locality" style="min-height:70px;resize:vertical"></textarea>
           <div class="row2">
-            <div><label for="city">City</label><input id="city" required placeholder="City" /></div>
-            <div><label for="state">State</label><input id="state" required placeholder="State" /></div>
+            <div><label for="city">City</label><input id="city" required placeholder="City" list="city-list" autocomplete="off" /><datalist id="city-list"></datalist></div>
+            <div><label for="state">State</label><input id="state" required placeholder="State" list="state-list" autocomplete="off" /><datalist id="state-list"></datalist></div>
           </div>
           <div class="row2">
             <div><label for="pincode">Pincode</label><input id="pincode" required placeholder="6-digit pincode" pattern="[0-9]{6}" /></div>
@@ -143,6 +143,53 @@
     var form = document.getElementById('checkout-form');
     var emptyState = document.getElementById('empty-state');
     var couponCode = '';
+
+    // Address autocomplete — Indian states/UTs and major cities, so typing
+    // "G" suggests Ghaziabad, Gurugram, Guwahati, etc. No external API/account needed.
+    var INDIA_STATES = [
+      'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana',
+      'Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur',
+      'Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana',
+      'Tripura','Uttar Pradesh','Uttarakhand','West Bengal',
+      'Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi',
+      'Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'
+    ];
+    var INDIA_CITIES = [
+      'Mumbai','Delhi','Bengaluru','Hyderabad','Ahmedabad','Chennai','Kolkata','Surat','Pune','Jaipur',
+      'Lucknow','Kanpur','Nagpur','Indore','Thane','Bhopal','Visakhapatnam','Patna','Vadodara','Ghaziabad',
+      'Ludhiana','Agra','Nashik','Faridabad','Meerut','Rajkot','Kalyan-Dombivli','Vasai-Virar','Varanasi',
+      'Srinagar','Aurangabad','Dhanbad','Amritsar','Navi Mumbai','Allahabad (Prayagraj)','Ranchi','Howrah',
+      'Coimbatore','Jabalpur','Gwalior','Vijayawada','Jodhpur','Madurai','Raipur','Kota','Guwahati',
+      'Chandigarh','Solapur','Hubballi-Dharwad','Bareilly','Moradabad','Mysuru','Gurugram','Aligarh',
+      'Jalandhar','Tiruchirappalli','Bhubaneswar','Salem','Warangal','Mira-Bhayandar','Thiruvananthapuram',
+      'Bhiwandi','Saharanpur','Guntur','Amravati','Bikaner','Noida','Jamshedpur','Bhilai','Cuttack',
+      'Firozabad','Kochi','Nellore','Bhavnagar','Dehradun','Durgapur','Asansol','Rourkela','Nanded',
+      'Kolhapur','Ajmer','Akola','Gulbarga','Jamnagar','Ujjain','Loni','Siliguri','Jhansi','Ulhasnagar',
+      'Jammu','Sangli-Miraj','Mangaluru','Erode','Belgaum','Ambattur','Tirunelveli','Malegaon','Gaya',
+      'Jalgaon','Udaipur','Maheshtala','Davanagere','Kozhikode','Kurnool','Rajpur Sonarpur','Rajahmundry',
+      'Bokaro','South Dumdum','Bellary','Patiala','Gopalpur','Agartala','Bhagalpur','Muzaffarnagar',
+      'Bhatpara','Panihati','Latur','Dhule','Rohtak','Korba','Bhilwara','Berhampur','Muzaffarpur',
+      'Ahmednagar','Mathura','Kollam','Avadi','Kadapa','Kamarhati','Bilaspur','Shahjahanpur','Satara',
+      'Bijapur','Rampur','Shivamogga','Chandrapur','Junagadh','Thrissur','Alwar','Bardhaman','Kulti',
+      'Kakinada','Nizamabad','Parbhani','Tumkur','Hisar','Ozhukarai','Bihar Sharif','Panipat','Darbhanga',
+      'Bally','Aizawl','Dewas','Ichalkaranji','Karnal','Bathinda','Jalna','Eluru','Kirari Suleman Nagar',
+      'Barabanki','Purnia','Satna','Mau','Sonipat','Farrukhabad','Sagar','Rourkela','Durg','Imphal',
+      'Ratlam','Hapur','Arrah','Anantapur','Karimnagar','Etawah','Ambernath','North Dumdum','Bharatpur',
+      'Begusarai','New Delhi','Gandhinagar','Baranagar','Tiruppur','Ozhukarai','Vellore','Machilipatnam',
+      'Vizianagaram','Katni','Sambalpur','Singrauli','Nadiad','Secunderabad','Yamunanagar','English Bazar',
+      'Pondicherry','Sikar','Thoothukudi','Rewa','Mirzapur','Raichur','Pali','Ramagundam','Haridwar',
+      'Vijayanagaram','Tenali','Nagercoil','Sri Ganganagar','Karawal Nagar','Mango','Thanjavur','Bulandshahr',
+      'Uluberia','Katihar','Sambhal','Singrauli','Nadiad','Secunderabad','Naihati','Yamunanagar',
+      'Panchkula','Zirakpur','Mohali','Silchar','Tezpur','Dibrugarh','Jorhat','Shillong','Itanagar',
+      'Gangtok','Kohima','Dimapur','Port Blair','Daman','Silvassa','Kavaratti','Leh'
+    ];
+    (function () {
+      var seenCities = {};
+      var cityHtml = INDIA_CITIES.filter(function (c) { if (seenCities[c]) return false; seenCities[c] = true; return true; })
+        .sort().map(function (c) { return '<option value="' + c + '">'; }).join('');
+      document.getElementById('city-list').innerHTML = cityHtml;
+      document.getElementById('state-list').innerHTML = INDIA_STATES.slice().sort().map(function (s) { return '<option value="' + s + '">'; }).join('');
+    })();
 
     // Prefill from saved customer profile
     var customer = Store.getCustomer();
