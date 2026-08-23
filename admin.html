@@ -109,13 +109,13 @@
       </div>
     </header>
     <nav class="tabs">
-      <button class="tab-btn active" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="overview">Overview</button>
       <button class="tab-btn" data-tab="orders">Orders</button>
-      <button class="tab-btn" data-tab="products">Products</button>
+      <button class="tab-btn active" data-tab="products">Products</button>
     </nav>
 
     <main class="wrap">
-      <section id="tab-overview">
+      <section id="tab-overview" hidden>
         <div class="stat-grid">
           <div class="stat-card"><span>Total orders</span><strong id="stat-orders">0</strong></div>
           <div class="stat-card"><span>Total revenue</span><strong id="stat-revenue">₹0</strong></div>
@@ -143,11 +143,11 @@
         </div>
       </section>
 
-      <section id="tab-products" hidden>
+      <section id="tab-products">
         <div class="two-col">
           <div class="card">
             <h2 id="prod-form-title">Add a new product</h2>
-            <p class="hint">Products you add here appear immediately on the homepage, their category page, search and the AI assistant.</p>
+            <p class="hint">Fill these in and it appears on your website right away. Price can also be changed anytime directly in the list on the right.</p>
             <form class="prod-form" id="form">
               <input type="hidden" id="p-id">
               <label for="p-name">Product name</label>
@@ -158,23 +158,26 @@
               </div>
               <label for="p-category">Category</label>
               <select id="p-category"></select>
-              <label for="p-badge">Badge</label>
-              <select id="p-badge"><option value="">None</option><option value="BESTSELLER">Bestseller</option><option value="NEW">New</option></select>
-              <label for="p-description">Description</label>
-              <textarea id="p-description" rows="3" placeholder="Shown on the product page"></textarea>
-              <div class="row2">
-                <div><label for="p-sizes">Sizes (comma-separated, optional)</label><input id="p-sizes" placeholder="Small, Medium, Large"></div>
-                <div><label for="p-colors">Colours (comma-separated, optional)</label><input id="p-colors" placeholder="Classic, Pink, Yellow"></div>
-              </div>
-              <label style="display:flex;align-items:center;gap:8px;margin-top:16px;font-weight:600;font-size:13px"><input type="checkbox" id="p-featured" style="width:auto"> Feature on homepage</label>
-              <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-weight:600;font-size:13px"><input type="checkbox" id="p-instock" checked style="width:auto"> In stock</label>
               <button type="submit" id="form-submit">Add product</button>
               <button type="button" id="form-cancel" hidden style="margin-top:18px;margin-left:10px;padding:12px 18px;border:1px solid #542d27;border-radius:5px;background:none;color:#542d27;font-weight:700;cursor:pointer">Cancel edit</button>
+              <button type="button" id="more-toggle" style="display:block;background:none;border:0;color:#8a5b3a;font-weight:700;font-size:13px;margin-top:16px;cursor:pointer;padding:0;text-decoration:underline">More options (description, sizes, badge...) ▾</button>
+              <div id="more-options" hidden>
+                <label for="p-badge">Badge</label>
+                <select id="p-badge"><option value="">None</option><option value="BESTSELLER">Bestseller</option><option value="NEW">New</option></select>
+                <label for="p-description">Description</label>
+                <textarea id="p-description" rows="3" placeholder="Shown on the product page"></textarea>
+                <div class="row2">
+                  <div><label for="p-sizes">Sizes (comma-separated, optional)</label><input id="p-sizes" placeholder="Small, Medium, Large"></div>
+                  <div><label for="p-colors">Colours (comma-separated, optional)</label><input id="p-colors" placeholder="Classic, Pink, Yellow"></div>
+                </div>
+                <label style="display:flex;align-items:center;gap:8px;margin-top:16px;font-weight:600;font-size:13px"><input type="checkbox" id="p-featured" style="width:auto"> Feature on homepage</label>
+                <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-weight:600;font-size:13px"><input type="checkbox" id="p-instock" checked style="width:auto"> In stock</label>
+              </div>
             </form>
           </div>
           <div class="card">
             <h2>Your products (<span id="prod-count">0</span>)</h2>
-            <p class="hint">Every product the storefront currently shows.</p>
+            <p class="hint">Click any price to change it instantly. Click Edit for everything else.</p>
             <div id="product-list"></div>
           </div>
         </div>
@@ -329,12 +332,44 @@
       var list = document.getElementById('product-list');
       document.getElementById('prod-count').textContent = items.length;
       list.innerHTML = items.length ? items.map(function (p) {
-        return '<div class="prod-row"><div><strong>' + p.icon + ' ' + Store.escapeHtml(p.name) + '</strong> — ' + Store.formatMoney(p.price) +
+        return '<div class="prod-row"><div><strong>' + p.icon + ' ' + Store.escapeHtml(p.name) + '</strong> — ' +
+          '<span class="price-edit" data-id="' + p.id + '" title="Click to change price">' + Store.formatMoney(p.price) + ' ✎</span>' +
           (p.featured ? ' · <span style="color:#6a8462">Featured</span>' : '') + (p.inStock === false ? ' · <span style="color:#b44b32">Out of stock</span>' : '') +
           '<small>' + Store.escapeHtml(Store.CATEGORIES[p.category] || p.category) + '</small></div>' +
           '<div><button type="button" data-edit="' + p.id + '" style="margin-right:6px">Edit</button><button type="button" data-remove="' + p.id + '">Delete</button></div></div>';
       }).join('') : '<div class="empty-note">No products yet — add your first one.</div>';
     }
+
+    // Click a price in the list to edit it right there, no form needed.
+    document.getElementById('product-list').addEventListener('click', function (event) {
+      var priceEl = event.target.closest('.price-edit');
+      if (!priceEl || priceEl.querySelector('input')) return;
+      var id = priceEl.dataset.id;
+      var product = Store.getProductById(id);
+      if (!product) return;
+      var oldHtml = priceEl.innerHTML;
+      priceEl.innerHTML = '<input type="number" min="0" value="' + product.price + '" style="width:90px;padding:5px;border:1px solid #d59d36;border-radius:4px;font:600 13px \'DM Sans\'">';
+      var input = priceEl.querySelector('input');
+      input.focus(); input.select();
+      function save() {
+        var newPrice = Number(input.value);
+        if (newPrice >= 0) { Store.updateProduct(id, { price: newPrice }); renderStats(); }
+        renderProducts();
+      }
+      input.addEventListener('blur', save);
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); save(); }
+        if (e.key === 'Escape') { priceEl.innerHTML = oldHtml; }
+      });
+      input.addEventListener('click', function (e) { e.stopPropagation(); });
+    });
+
+    var moreToggle = document.getElementById('more-toggle'), moreOptions = document.getElementById('more-options');
+    function setMoreOptions(open) {
+      moreOptions.hidden = !open;
+      moreToggle.textContent = open ? 'Fewer options ▴' : 'More options (description, sizes, badge...) ▾';
+    }
+    moreToggle.addEventListener('click', function () { setMoreOptions(moreOptions.hidden); });
 
     function resetForm() {
       prodForm.reset();
@@ -343,6 +378,7 @@
       formTitle.textContent = 'Add a new product';
       formSubmit.textContent = 'Add product';
       formCancel.hidden = true;
+      setMoreOptions(false);
     }
 
     prodForm.addEventListener('submit', function (event) {
@@ -389,6 +425,7 @@
         formTitle.textContent = 'Edit product';
         formSubmit.textContent = 'Save changes';
         formCancel.hidden = false;
+        setMoreOptions(true);
         prodForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } else if (removeBtn) {
         if (!confirm('Delete this product? This cannot be undone.')) return;
