@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Product | Little Gopal</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"><style>body{margin:0;background:#fffaf0;color:#38221f;font-family:"DM Sans",sans-serif}.wrap{max-width:1050px;margin:auto;padding:0 24px}.top{height:78px;display:flex;align-items:center;justify-content:space-between;background:#fffdf8}.brand{font:700 28px "Playfair Display";text-decoration:none;color:#542d27}.brand span{color:#c45a2b}.back{font-size:14px;color:#542d27;font-weight:700;text-decoration:none}.product{display:grid;grid-template-columns:1fr 1fr;gap:64px;padding:65px 0}.image{min-height:430px;display:grid;place-items:center;background:#f3dfcf;border-radius:12px;font-size:190px}.tag{font-size:12px;color:#a24e2b;text-transform:uppercase;font-weight:700;letter-spacing:.1em}.product h1{font:700 48px "Playfair Display";margin:9px 0}.price{font-size:23px;color:#af512c;font-weight:700}.desc{line-height:1.7;color:#70544d}.choice{margin:23px 0}.choice strong{display:block;margin-bottom:9px}.option{border:1px solid #d9c3aa;background:#fffdf8;border-radius:4px;padding:9px 12px;margin-right:7px;cursor:pointer}.option.active{border-color:#542d27;background:#f5e6d7}.stock{color:#537048;font-size:13px;font-weight:700}.add{border:0;background:#542d27;color:#fff;padding:15px 22px;border-radius:4px;font-weight:700;font-size:15px;cursor:pointer;margin-top:20px}.buy-now{border:1px solid #542d27;background:#fff;color:#542d27;padding:15px 22px;border-radius:4px;font-weight:700;font-size:15px;cursor:pointer;margin-top:20px;margin-left:10px}.trust{border-top:1px solid #ead8c5;margin-top:25px;padding-top:18px;color:#73564e;font-size:13px;line-height:1.8}@media(max-width:700px){.product{grid-template-columns:1fr;gap:28px;padding:35px 0}.image{min-height:280px;font-size:130px}.product h1{font-size:38px}}</style></head><body><header class="wrap top"><a class="brand" href="index.html">Little <span>Gopal</span></a><a class="back" href="index.html#bestsellers">← Continue shopping</a></header><main class="wrap product"><div class="image" id="image">🛍️</div><div><div class="tag">Little Gopal collection</div><h1 id="name">Divine product</h1><div class="price" id="price">₹0</div><p class="desc">A beautiful essential for the loving seva of Krishna ji and Radha Rani. Chosen thoughtfully for daily darshan and festive celebrations.</p><div class="stock" id="stock">● In stock — ready to ship</div><div class="choice" id="size-choice" hidden><strong>Choose size</strong><div id="size-options"></div></div><div class="choice" id="color-choice" hidden><strong>Choose colour</strong><div id="color-options"></div></div><button class="add" id="add">Add to cart</button><button class="buy-now" id="buy-now">Buy now</button><div class="trust">✓ Pan-India delivery<br>✓ Free shipping above ₹999<br>✓ Easy support on WhatsApp</div></div></main><script src="cart.js"></script><script>
+const Store = window.LittleGopalStore;
+const params = new URLSearchParams(location.search);
+const product = params.get('id') ? Store.getProductById(params.get('id')) : Store.getProductByName(params.get('name') || '');
+if (!product) {
+  document.querySelector('main').innerHTML = '<div style="padding:60px 0;text-align:center"><h1 style="font-family:\'Playfair Display\'">Product not found</h1><p><a href="index.html#bestsellers" style="color:#542d27;font-weight:700">← Back to shop</a></p></div>';
+} else {
+  document.title = `${product.name} | Little Gopal`;
+  document.getElementById('name').textContent = product.name;
+  document.getElementById('image').textContent = product.icon;
+  document.getElementById('price').textContent = Store.formatMoney(product.price);
+  document.querySelector('.desc').textContent = product.description || 'A beautiful essential for the loving seva of Krishna ji and Radha Rani.';
+  const inStock = product.inStock !== false;
+  document.getElementById('stock').textContent = inStock ? '● In stock — ready to ship' : '● Currently out of stock';
+  document.getElementById('stock').style.color = inStock ? '#537048' : '#b44b32';
+  function renderOptions(containerId, groupId, values) {
+    if (!values || !values.length) return;
+    document.getElementById(groupId).hidden = false;
+    document.getElementById(containerId).innerHTML = values.map((v, i) => `<button class="option${i === 0 ? ' active' : ''}">${Store.escapeHtml(v)}</button>`).join('');
+    document.getElementById(containerId).querySelectorAll('.option').forEach(b => b.onclick = () => { b.parentElement.querySelectorAll('.option').forEach(x => x.classList.remove('active')); b.classList.add('active'); });
+  }
+  renderOptions('size-options', 'size-choice', product.sizes);
+  renderOptions('color-options', 'color-choice', product.colors);
+  const addBtn = document.getElementById('add'), buyBtn = document.getElementById('buy-now');
+  if (!inStock) { addBtn.disabled = true; buyBtn.disabled = true; addBtn.style.opacity = buyBtn.style.opacity = .5; addBtn.textContent = 'Out of stock'; }
+  addBtn.onclick = () => { if (!inStock) return; Store.addToCart({ name: product.name, price: product.price, image: product.icon }); addBtn.textContent = 'Added to cart ✓'; };
+  buyBtn.onclick = () => { if (!inStock) return; Store.addToCart({ name: product.name, price: product.price, image: product.icon }, false); location.href = 'checkout.html'; };
+}
+</script></body></html>

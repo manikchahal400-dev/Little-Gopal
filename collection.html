@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Collection | Little Gopal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--ink:#36201e;--maroon:#542d27;--orange:#c45a2b;--cream:#fffaf0}*{box-sizing:border-box}body{margin:0;font-family:"DM Sans",sans-serif;color:var(--ink);background:var(--cream)}.wrap{max-width:1180px;margin:auto;padding:0 24px}.notice{background:var(--maroon);color:#fff4df;text-align:center;font-size:13px;letter-spacing:.05em;padding:10px}.top{height:80px;display:flex;align-items:center;justify-content:space-between;background:#fffdf9}.brand{font:700 28px "Playfair Display";color:var(--maroon);text-decoration:none}.brand span{color:var(--orange)}.back{font-size:14px;color:var(--maroon);font-weight:700;text-decoration:none}.hero{background:linear-gradient(100deg,#f6ddd5,#fbf0dc);padding:55px 0 61px;text-align:center}.crumb{font-size:13px;color:#9b592e;margin-bottom:17px}.hero h1{font:700 clamp(39px,5vw,62px) "Playfair Display";margin:0}.hero p{max-width:540px;margin:13px auto 0;color:#74544e;line-height:1.6}.shop{padding:48px 0 78px}.layout{display:grid;grid-template-columns:245px 1fr;gap:38px}.filter{background:#fffdf9;border:1px solid #edddc9;border-radius:8px;padding:22px;height:max-content}.filter h2{font:700 24px "Playfair Display";margin:0 0 21px}.filter label{display:block;font-size:13px;font-weight:700;margin:18px 0 9px}.range{width:100%;accent-color:var(--orange)}.price-tags{display:flex;justify-content:space-between;margin-top:9px;font-size:12px;color:#755d58}.filter button{width:100%;border:0;border-radius:3px;background:var(--maroon);color:#fff;padding:12px;margin-top:24px;font-weight:700;cursor:pointer}.clear{display:block;margin:14px auto 0;background:none!important;color:var(--maroon)!important;padding:2px!important;text-decoration:underline;font-size:12px}.count{font-size:14px;color:#765b54;margin:4px 0 19px}.products{display:grid;grid-template-columns:repeat(3,1fr);gap:19px}.product{background:#fffdf9;border-radius:7px;padding:10px 10px 16px;box-shadow:0 1px 0 #e6d8c6}.pic{height:210px;border-radius:4px;background:#f2ddcf;display:grid;place-items:center;font-size:93px}.product:nth-child(2n) .pic{background:#e8efd9}.product:nth-child(3n) .pic{background:#f0dce2}.product h3{font:600 19px "Playfair Display";margin:14px 5px 5px}.price{font-weight:700;color:#a94d29;margin:0 5px;font-size:14px}.empty{display:none;grid-column:1/-1;padding:40px;text-align:center;background:#fffdf9;border-radius:8px;color:#735a53}.add-btn{width:calc(100% - 10px);margin:12px 5px 0;border:0;background:var(--maroon);color:#fff;border-radius:4px;padding:9px;font-weight:700;font-size:12.5px;cursor:pointer}.add-btn.added{background:#6a8462}@media(max-width:760px){.layout{grid-template-columns:1fr}.filter{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}.filter h2{grid-column:1/-1}.filter button{align-self:end}.clear{grid-column:1/-1}.products{grid-template-columns:repeat(2,1fr)}}@media(max-width:430px){.wrap{padding:0 17px}.products{grid-template-columns:1fr}.filter{grid-template-columns:1fr}.pic{height:190px}}
+  </style>
+</head>
+<body>
+  <div class="notice">ॐ Free shipping on orders above ₹999 • Made with devotion</div>
+  <header class="wrap top"><a class="brand" href="index.html">Little <span>Gopal</span></a><a class="back" href="index.html#collections">← Back to collections</a></header>
+  <section class="hero"><div class="wrap"><div class="crumb" id="crumb">Home / Collections</div><h1 id="title">Collection</h1><p id="intro">Explore thoughtful essentials for your beloved Thakur ji.</p></div></section>
+  <main class="wrap shop"><div class="layout"><aside class="filter"><h2>Filter by price</h2><div><label for="price">Maximum price</label><input class="range" type="range" id="price" min="100" max="2500" value="2500" step="50"><div class="price-tags"><span>₹100</span><strong id="selected-price">₹2,500</strong></div></div><button id="apply-filter">Show products</button><button class="clear" id="clear-filter">Clear filter</button></aside><section><p class="count" id="count"></p><div class="products" id="products"></div></section></div></main>
+  <script src="cart.js"></script>
+  <script>
+    const Store = window.LittleGopalStore;
+    const category = new URLSearchParams(location.search).get('category') || 'clothes';
+    const title = Store.CATEGORIES[category] || 'Collection';
+    const intro = Store.CATEGORY_INTROS[category] || 'Explore thoughtful essentials for your beloved Thakur ji.';
+    const items = Store.getProductsByCategory(category);
+    const products = document.getElementById('products');
+    document.title = `${title} | Little Gopal`;
+    document.getElementById('title').textContent = title;
+    document.getElementById('crumb').textContent = `Home / Collections / ${title}`;
+    document.getElementById('intro').textContent = intro;
+    products.innerHTML = items.map(p => `<article class="product" data-price="${p.price}" data-id="${p.id}"><div class="pic">${p.icon}</div><h3>${Store.escapeHtml(p.name)}</h3><p class="price">${Store.formatMoney(p.price)}</p><button class="add-btn" ${p.inStock === false ? 'disabled' : ''}>${p.inStock === false ? 'Out of stock' : 'Add to cart'}</button></article>`).join('') + '<div class="empty" id="empty">No products are available at this price. Please choose a higher price.</div>';
+    const price=document.getElementById('price'),selected=document.getElementById('selected-price'),cards=[...document.querySelectorAll('.product')],count=document.getElementById('count'),empty=document.getElementById('empty'),format=value=>'₹'+Number(value).toLocaleString('en-IN');
+    const maxPrice = Math.max(2500, ...items.map(p => p.price));
+    price.max = maxPrice; price.value = maxPrice; selected.textContent = format(maxPrice);
+    function filterProducts(){const max=+price.value;selected.textContent=format(max);let visible=0;cards.forEach(card=>{const show=+card.dataset.price<=max;card.style.display=show?'':'none';if(show)visible++});count.textContent=`Showing ${visible} ${title.toLowerCase()} product${visible===1?'':'s'}`;empty.style.display=visible?'none':'block'}price.addEventListener('input',()=>selected.textContent=format(price.value));document.getElementById('apply-filter').addEventListener('click',filterProducts);document.getElementById('clear-filter').addEventListener('click',()=>{price.value=maxPrice;filterProducts()});filterProducts();
+    products.addEventListener('click', event => { const button = event.target.closest('.add-btn'); if (!button || button.disabled) return; const card = button.closest('.product'); const p = Store.getProductById(card.dataset.id); Store.addToCart({ name: p.name, price: p.price, image: p.icon }); button.textContent = 'Added ✓'; button.classList.add('added'); setTimeout(() => { button.textContent = 'Add to cart'; button.classList.remove('added'); }, 1500); });
+    products.addEventListener('click', event => { if (event.target.closest('button')) return; const card = event.target.closest('.product'); if (card) location.href = `product.html?id=${encodeURIComponent(card.dataset.id)}`; });
+  </script>
+</body>
+</html>

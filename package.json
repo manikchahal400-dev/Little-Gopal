@@ -1,0 +1,9 @@
+{
+  "name": "little-gopal-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Little Gopal storefront (static site) + admin auth API (Vercel serverless functions).",
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Checkout | Little Gopal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{--ink:#36201e;--maroon:#542d27;--orange:#c45a2b;--gold:#d59d36;--cream:#fffaf0;--blush:#f7e5db;--leaf:#6a8462}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"DM Sans",sans-serif;color:var(--ink);background:var(--cream)}
+  .wrap{max-width:1120px;margin:auto;padding:0 24px}
+  .notice{background:var(--maroon);color:#fff4df;text-align:center;font-size:13px;letter-spacing:.05em;padding:10px}
+  .top{height:80px;display:flex;align-items:center;justify-content:space-between;background:#fffdf9}
+  .brand{font:700 28px "Playfair Display";color:var(--maroon);text-decoration:none}
+  .brand span{color:var(--orange)}
+  .back{font-size:14px;color:var(--maroon);font-weight:700;text-decoration:none}
+  .steps{padding:36px 0 10px}
+  .steps h1{font:700 clamp(30px,4vw,42px) "Playfair Display";margin:0 0 6px}
+  .steps p{color:#74544e;margin:0;font-size:14px}
+  .layout{display:grid;grid-template-columns:1.25fr 1fr;gap:36px;padding:26px 0 90px;align-items:start}
+  .card{background:#fffdf9;border:1px solid #edddc9;border-radius:10px;padding:24px}
+  .card + .card{margin-top:20px}
+  .card h2{font:700 22px "Playfair Display";margin:0 0 16px}
+  label{display:block;font-size:13px;font-weight:700;margin:14px 0 6px}
+  input,select,textarea{width:100%;border:1px solid #dfcdb8;border-radius:5px;padding:11px;font:14px "DM Sans";outline-color:var(--orange);background:#fff}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .pay-options{display:grid;gap:10px;margin-top:6px}
+  .pay-option{border:1px solid #e0cdb7;border-radius:7px;padding:13px 14px;display:flex;align-items:flex-start;gap:11px;cursor:pointer}
+  .pay-option.active{border-color:var(--maroon);background:#f7ebda}
+  .pay-option input{width:auto;margin-top:3px}
+  .pay-option strong{display:block;font:600 15px "DM Sans"}
+  .pay-option span{display:block;font-size:12px;color:#77584f;margin-top:2px;line-height:1.5}
+  .pay-badges{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+  .pay-badges span{background:#fff;border:1px solid #e5d3bd;border-radius:4px;padding:3px 7px;font-size:11px;font-weight:700;color:#8a5b3a}
+  .demo-note{background:#fbf1e3;border:1px dashed #d9b98a;border-radius:7px;padding:12px 14px;font-size:12.5px;line-height:1.6;color:#6d4d3b;margin-top:14px}
+  .demo-note strong{color:#54301f}
+  .summary-items{max-height:280px;overflow:auto;margin-bottom:10px}
+  .summary-item{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid #eedfce;font-size:14px}
+  .summary-item:first-child{border-top:0}
+  .summary-item strong{display:block;font-family:"Playfair Display"}
+  .summary-item small{color:#8a6a61}
+  .totals-line{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;color:#5a423d}
+  .totals-line.grand{border-top:1px solid #dfc8af;margin-top:8px;padding-top:14px;font-weight:700;font-size:17px;color:var(--ink)}
+  .coupon-row{display:flex;gap:8px;margin:14px 0}
+  .coupon-row input{flex:1}
+  .coupon-row button{border:0;background:var(--maroon);color:#fff;border-radius:5px;padding:0 14px;font-weight:700;cursor:pointer}
+  .coupon-msg{font-size:12px;margin:-6px 0 10px;min-height:14px}
+  .coupon-msg.ok{color:var(--leaf)}
+  .coupon-msg.err{color:#b44b32}
+  .place-btn{width:100%;border:0;border-radius:5px;background:var(--maroon);color:#fff;padding:15px;font-weight:700;font-size:15px;cursor:pointer;margin-top:16px}
+  .place-btn:disabled{opacity:.55;cursor:not-allowed}
+  .trust{font-size:12px;color:#77584f;line-height:1.6;margin-top:14px}
+  .empty-state{text-align:center;padding:50px 20px;background:#fffdf9;border:1px solid #edddc9;border-radius:10px}
+  .empty-state div{font-size:44px;margin-bottom:10px}
+  .empty-state strong{display:block;font:600 22px "Playfair Display";margin-bottom:6px}
+  .empty-state a{display:inline-block;margin-top:16px;background:var(--maroon);color:#fff;text-decoration:none;padding:12px 20px;border-radius:4px;font-weight:700;font-size:14px}
+  @media(max-width:820px){.layout{grid-template-columns:1fr}.row2{grid-template-columns:1fr}}
+  @media(max-width:430px){.wrap{padding:0 17px}}
+</style>
+</head>
+<body>
+  <div class="notice">ॐ Free shipping on orders above ₹999 • Made with devotion</div>
+  <header class="wrap top"><a class="brand" href="index.html">Little <span>Gopal</span></a><a class="back" href="index.html">← Continue shopping</a></header>
+  <section class="wrap steps"><h1>Checkout</h1><p>Enter your delivery details and choose how you'd like to pay.</p></section>
+
+  <main class="wrap">
+    <div id="empty-state" class="empty-state" style="display:none">
+      <div>🛍️</div>
+      <strong>Your cart is empty</strong>
+      <span>Add a few divine essentials before checking out.</span>
+      <a href="index.html#bestsellers">Browse products</a>
+    </div>
+
+    <form id="checkout-form" class="layout">
+      <div>
+        <div class="card">
+          <h2>Delivery details</h2>
+          <label for="full-name">Full name</label>
+          <input id="full-name" required placeholder="Your full name" />
+          <div class="row2">
+            <div><label for="email">Email address</label><input id="email" type="email" required placeholder="you@example.com" /></div>
+            <div><label for="phone">Phone number</label><input id="phone" type="tel" required placeholder="10-digit mobile number" pattern="[0-9+\- ]{7,15}" /></div>
+          </div>
+          <label for="address">Address</label>
+          <textarea id="address" required placeholder="House no., street, locality" style="min-height:70px;resize:vertical"></textarea>
+          <div class="row2">
+            <div><label for="city">City</label><input id="city" required placeholder="City" /></div>
+            <div><label for="state">State</label><input id="state" required placeholder="State" /></div>
+          </div>
+          <div class="row2">
+            <div><label for="pincode">Pincode</label><input id="pincode" required placeholder="6-digit pincode" pattern="[0-9]{6}" /></div>
+            <div><label for="notes">Delivery note (optional)</label><input id="notes" placeholder="e.g. landmark" /></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Payment method</h2>
+          <div class="pay-options">
+            <label class="pay-option active" id="opt-razorpay">
+              <input type="radio" name="pay" value="razorpay" checked />
+              <div>
+                <strong>Pay online — Cards, UPI, Netbanking, Wallets</strong>
+                <span>Secure checkout powered by Razorpay. Your card and UPI details are never seen by this website.</span>
+                <div class="pay-badges"><span>UPI</span><span>Visa</span><span>Mastercard</span><span>RuPay</span><span>Netbanking</span></div>
+              </div>
+            </label>
+            <label class="pay-option" id="opt-cod">
+              <input type="radio" name="pay" value="cod" />
+              <div>
+                <strong>Cash on Delivery</strong>
+                <span>Pay in cash when your order arrives at your doorstep.</span>
+              </div>
+            </label>
+          </div>
+          <div class="demo-note"><strong>Demo store notice —</strong> this is a static, front-end-only site running in Razorpay <em>test mode</em> with a public sample key, so no real money moves and no card details are stored anywhere. To accept genuine payments: create a Razorpay (or similar) merchant account, generate your own Key ID, create orders server-side via the Orders API, and verify the payment signature on your backend before confirming an order.</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>Order summary</h2>
+          <div class="summary-items" id="summary-items"></div>
+          <div class="coupon-row"><input id="coupon" placeholder="Coupon code (try GOPAL10)" /><button type="button" id="coupon-apply">Apply</button></div>
+          <div class="coupon-msg" id="coupon-msg"></div>
+          <div class="totals-line"><span>Subtotal</span><span id="sum-subtotal">₹0</span></div>
+          <div class="totals-line" id="discount-line" style="display:none"><span>Discount</span><span id="sum-discount">−₹0</span></div>
+          <div class="totals-line"><span>Shipping</span><span id="sum-shipping">₹0</span></div>
+          <div class="totals-line grand"><span>Total</span><span id="sum-total">₹0</span></div>
+          <button class="place-btn" id="place-order" type="submit">Place order</button>
+          <div class="trust">✓ Pan-India delivery &nbsp; ✓ Free shipping above ₹999 &nbsp; ✓ Support on WhatsApp</div>
+        </div>
+      </div>
+    </form>
+  </main>
+
+  <script src="cart.js"></script>
+  <script>
+    var Store = window.LittleGopalStore;
+    var form = document.getElementById('checkout-form');
+    var emptyState = document.getElementById('empty-state');
+    var couponCode = '';
+
+    // Prefill from saved customer profile
+    var customer = Store.getCustomer();
+    if (customer) {
+      if (customer.name) document.getElementById('full-name').value = customer.name;
+      if (customer.email) document.getElementById('email').value = customer.email;
+      if (customer.phone) document.getElementById('phone').value = customer.phone;
+    }
+
+    document.querySelectorAll('.pay-option').forEach(function (label) {
+      label.addEventListener('click', function () {
+        document.querySelectorAll('.pay-option').forEach(function (l) { l.classList.remove('active'); });
+        label.classList.add('active');
+      });
+    });
+
+    function renderSummary() {
+      var totals = Store.getTotals(couponCode);
+      var itemsEl = document.getElementById('summary-items');
+      if (!totals.cart.length) {
+        emptyState.style.display = 'block';
+        form.style.display = 'none';
+        return;
+      }
+      itemsEl.innerHTML = totals.cart.map(function (item) {
+        return '<div class="summary-item"><div><strong>' + Store.escapeHtml(item.image) + ' ' + Store.escapeHtml(item.name) + '</strong><small>Qty ' + item.qty + '</small></div><span>' + Store.formatMoney(item.price * item.qty) + '</span></div>';
+      }).join('');
+      document.getElementById('sum-subtotal').textContent = Store.formatMoney(totals.subtotal);
+      document.getElementById('sum-shipping').textContent = totals.shipping ? Store.formatMoney(totals.shipping) : 'FREE';
+      document.getElementById('discount-line').style.display = totals.discount ? 'flex' : 'none';
+      if (totals.discount) document.getElementById('sum-discount').textContent = '−' + Store.formatMoney(totals.discount);
+      document.getElementById('sum-total').textContent = Store.formatMoney(totals.total);
+      return totals;
+    }
+
+    document.getElementById('coupon-apply').addEventListener('click', function () {
+      var input = document.getElementById('coupon').value.trim();
+      var msg = document.getElementById('coupon-msg');
+      if (Store.COUPONS[input.toUpperCase()]) {
+        couponCode = input;
+        msg.textContent = 'Coupon applied — 10% off your order.';
+        msg.className = 'coupon-msg ok';
+      } else {
+        couponCode = '';
+        msg.textContent = input ? 'That coupon code is not valid.' : '';
+        msg.className = 'coupon-msg err';
+      }
+      renderSummary();
+    });
+
+    var totalsSnapshot = renderSummary();
+
+    function buildOrder(paymentMethod, paymentStatus, paymentRef) {
+      var totals = Store.getTotals(couponCode);
+      return {
+        id: Store.makeOrderId(),
+        date: new Date().toISOString(),
+        items: totals.cart,
+        subtotal: totals.subtotal,
+        discount: totals.discount,
+        coupon: couponCode || null,
+        shipping: totals.shipping,
+        total: totals.total,
+        customer: {
+          name: document.getElementById('full-name').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          phone: document.getElementById('phone').value.trim(),
+          address: document.getElementById('address').value.trim(),
+          city: document.getElementById('city').value.trim(),
+          state: document.getElementById('state').value.trim(),
+          pincode: document.getElementById('pincode').value.trim(),
+          notes: document.getElementById('notes').value.trim()
+        },
+        paymentMethod: paymentMethod,
+        paymentStatus: paymentStatus,
+        paymentRef: paymentRef || null,
+        status: 'Confirmed'
+      };
+    }
+
+    function completeOrder(order) {
+      Store.placeOrder(order);
+      var savedCustomer = { name: order.customer.name, email: order.customer.email, phone: order.customer.phone };
+      Store.saveCustomer(savedCustomer);
+      location.href = 'order-success.html?order=' + encodeURIComponent(order.id);
+    }
+
+    function loadRazorpayScript(callback) {
+      if (window.Razorpay) return callback(true);
+      var script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = function () { callback(true); };
+      script.onerror = function () { callback(false); };
+      document.body.appendChild(script);
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      var totals = Store.getTotals(couponCode);
+      if (!totals.cart.length) return;
+      var method = document.querySelector('input[name="pay"]:checked').value;
+      var placeBtn = document.getElementById('place-order');
+
+      if (method === 'cod') {
+        completeOrder(buildOrder('Cash on Delivery', 'Pending', null));
+        return;
+      }
+
+      // Razorpay test-mode checkout. Replace with your own Key ID (and a
+      // server-created order + signature verification) before going live.
+      placeBtn.disabled = true;
+      placeBtn.textContent = 'Loading secure checkout…';
+      loadRazorpayScript(function (loaded) {
+        placeBtn.disabled = false;
+        placeBtn.textContent = 'Place order';
+        if (!loaded) { alert('Could not load the payment gateway. Please check your connection or choose Cash on Delivery.'); return; }
+        var name = document.getElementById('full-name').value.trim();
+        var email = document.getElementById('email').value.trim();
+        var phone = document.getElementById('phone').value.trim();
+        var rzp = new Razorpay({
+          key: 'rzp_test_1DP5mmOlF5G5ag', // Razorpay's public sample test key — replace with your own merchant Key ID
+          amount: Math.round(totals.total * 100),
+          currency: 'INR',
+          name: 'Little Gopal',
+          description: 'Order for ' + totals.cart.length + ' item(s)',
+          prefill: { name: name, email: email, contact: phone },
+          theme: { color: '#542d27' },
+          handler: function (response) {
+            completeOrder(buildOrder('Online payment (Razorpay)', 'Paid', response.razorpay_payment_id));
+          },
+          modal: {
+            ondismiss: function () { /* user closed the payment window */ }
+          }
+        });
+        rzp.on('payment.failed', function (response) {
+          alert('Payment failed: ' + (response.error && response.error.description ? response.error.description : 'please try again.'));
+        });
+        rzp.open();
+      });
+    });
+  </script>
+</body>
+</html>
