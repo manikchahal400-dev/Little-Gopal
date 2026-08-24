@@ -73,7 +73,6 @@
     { id: 'wooden-temple-seat', name: 'Wooden Temple Seat', price: 1500, category: 'singhasan', icon: '🏛️', badge: '', featured: false, description: 'A sturdy wooden temple seat, handcrafted with care.', sizes: [], colors: [], inStock: true },
     { id: 'silver-style-singhasan', name: 'Silver Style Singhasan', price: 2100, category: 'singhasan', icon: '✨', badge: '', featured: false, description: 'A premium silver-style singhasan for special occasions.', sizes: [], colors: [], inStock: true },
     { id: 'floral-backrest-seat', name: 'Floral Backrest Seat', price: 899, category: 'singhasan', icon: '🌸', badge: '', featured: false, description: 'A floral-patterned backrest seat for comfortable darshan.', sizes: [], colors: [], inStock: true },
-    { id: 'peacock-jhula', name: 'Peacock Jhula', price: 1000, category: 'singhasan', icon: '🎠', badge: '', featured: true, description: 'A joyful peacock-themed jhula for seva.', sizes: [], colors: [], inStock: true },
     { id: 'wooden-palana', name: 'Wooden Palana', price: 1400, category: 'singhasan', icon: '🪵', badge: '', featured: false, description: 'A handcrafted wooden palana for restful seva.', sizes: [], colors: [], inStock: true },
     { id: 'royal-peacock-swing', name: 'Royal Peacock Swing', price: 1800, category: 'singhasan', icon: '🦚', badge: '', featured: false, description: 'A royal peacock-themed swing for festive seva.', sizes: [], colors: [], inStock: true },
     { id: 'pink-radha-jhula', name: 'Pink Radha Jhula', price: 1200, category: 'singhasan', icon: '🎀', badge: '', featured: false, description: 'A gentle pink jhula for Radha Rani.', sizes: [], colors: [], inStock: true },
@@ -145,6 +144,12 @@
   function slugify(name) {
     return String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'product';
   }
+  // Products retired from the catalog by name/id. Listed here (not just deleted
+  // from DEFAULT_PRODUCTS) so getProducts() actively strips them out of every
+  // browser that already saved a copy of the old catalog to localStorage --
+  // otherwise a product removed from the site code would keep showing up for
+  // anyone who had already visited before the removal.
+  var REMOVED_PRODUCT_IDS = ['peacock-jhula'];
   function getProducts() {
     var stored = readJSON(PRODUCTS_KEY, null);
     if (!stored) {
@@ -152,16 +157,19 @@
       localStorage.setItem(PRODUCTS_KEY, JSON.stringify(stored));
       return stored;
     }
+    var changed = false;
     // Add any new catalog products introduced since this browser last saved
     // its list (e.g. after a site update), without touching anything the
     // owner has already added, edited, or deleted.
     var existingIds = {};
     stored.forEach(function (p) { existingIds[p.id] = true; });
     var missing = DEFAULT_PRODUCTS.filter(function (p) { return !existingIds[p.id]; });
-    if (missing.length) {
-      stored = stored.concat(missing);
-      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(stored));
-    }
+    if (missing.length) { stored = stored.concat(missing); changed = true; }
+    // Strip out anything retired above.
+    var beforeCount = stored.length;
+    stored = stored.filter(function (p) { return REMOVED_PRODUCT_IDS.indexOf(p.id) === -1; });
+    if (stored.length !== beforeCount) changed = true;
+    if (changed) localStorage.setItem(PRODUCTS_KEY, JSON.stringify(stored));
     return stored;
   }
   function saveProducts(list) { localStorage.setItem(PRODUCTS_KEY, JSON.stringify(list)); }
