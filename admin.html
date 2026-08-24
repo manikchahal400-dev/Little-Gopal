@@ -174,9 +174,19 @@
 
       <section id="tab-returns" hidden>
         <div class="card">
-          <h2>Return &amp; replacement requests</h2>
-          <p class="hint">Customers submit these from their order history along with photos of the issue. Approve to start a replacement, or reject with an optional note. (Little Gopal offers replacements, not cash refunds — see the Replacement Policy page.)</p>
-          <div id="returns-list"></div>
+          <h2>Pending return requests</h2>
+          <p class="hint">Customers submit these from their order history along with photos of the issue. Approve to start a replacement, or reject with an optional note. (Little Gopal offers replacements, not cash refunds — see the Replacement Policy page.) The customer sees your decision the next time they open their account page.</p>
+          <div id="returns-list-pending"></div>
+        </div>
+        <div class="card" style="margin-top:22px">
+          <h2>Approved returns</h2>
+          <p class="hint">Requests you've approved for replacement.</p>
+          <div id="returns-list-approved"></div>
+        </div>
+        <div class="card" style="margin-top:22px">
+          <h2>Rejected returns</h2>
+          <p class="hint">Requests you've rejected.</p>
+          <div id="returns-list-rejected"></div>
         </div>
       </section>
 
@@ -413,21 +423,33 @@
         '</div></div>';
     }
     function renderReturns() {
-      var container = document.getElementById('returns-list');
-      if (!container) return;
-      container.innerHTML = '<div class="empty-note">Loading return requests…</div>';
+      var pendingEl = document.getElementById('returns-list-pending');
+      var approvedEl = document.getElementById('returns-list-approved');
+      var rejectedEl = document.getElementById('returns-list-rejected');
+      if (!pendingEl) return;
+      var loading = '<div class="empty-note">Loading return requests…</div>';
+      pendingEl.innerHTML = approvedEl.innerHTML = rejectedEl.innerHTML = loading;
       api('/api/returns/list').then(function (result) {
-        if (!result.ok) { container.innerHTML = '<div class="empty-note">' + Store.escapeHtml((result.data && result.data.error) || 'Could not load return requests.') + '</div>'; return; }
+        if (!result.ok) {
+          var errMsg = '<div class="empty-note">' + Store.escapeHtml((result.data && result.data.error) || 'Could not load return requests.') + '</div>';
+          pendingEl.innerHTML = approvedEl.innerHTML = rejectedEl.innerHTML = errMsg;
+          return;
+        }
         returnsCache = result.data.requests || [];
-        var pendingCount = returnsCache.filter(function (r) { return r.status === 'Pending'; }).length;
+        var pending = returnsCache.filter(function (r) { return r.status === 'Pending'; });
+        var approved = returnsCache.filter(function (r) { return r.status === 'Approved'; });
+        var rejected = returnsCache.filter(function (r) { return r.status === 'Rejected'; });
         var badge = document.getElementById('returns-badge');
-        if (badge) { badge.textContent = pendingCount; badge.hidden = !pendingCount; }
-        container.innerHTML = returnsCache.length ? returnsCache.map(returnCardHtml).join('') : '<div class="empty-note">No return requests yet.</div>';
+        if (badge) { badge.textContent = pending.length; badge.hidden = !pending.length; }
+        pendingEl.innerHTML = pending.length ? pending.map(returnCardHtml).join('') : '<div class="empty-note">No pending requests.</div>';
+        approvedEl.innerHTML = approved.length ? approved.map(returnCardHtml).join('') : '<div class="empty-note">No approved returns yet.</div>';
+        rejectedEl.innerHTML = rejected.length ? rejected.map(returnCardHtml).join('') : '<div class="empty-note">No rejected returns yet.</div>';
       }).catch(function () {
-        container.innerHTML = '<div class="empty-note">Could not reach the server. Please check your connection.</div>';
+        var errMsg = '<div class="empty-note">Could not reach the server. Please check your connection.</div>';
+        pendingEl.innerHTML = approvedEl.innerHTML = rejectedEl.innerHTML = errMsg;
       });
     }
-    document.getElementById('returns-list').addEventListener('click', function (event) {
+    document.getElementById('tab-returns').addEventListener('click', function (event) {
       var img = event.target.closest('img[data-full]');
       if (img) { window.open(img.dataset.full, '_blank'); return; }
       var btn = event.target.closest('button[data-id]');

@@ -52,6 +52,8 @@
   .return-toggle{margin-top:12px;border:1px solid var(--maroon);background:none;color:var(--maroon);padding:9px 14px;border-radius:5px;font-weight:700;font-size:12.5px;cursor:pointer}
   .cancel-order-btn{margin-top:12px;margin-right:8px;border:1px solid #b44b32;background:none;color:#b44b32;padding:9px 14px;border-radius:5px;font-weight:700;font-size:12.5px;cursor:pointer}
   .return-status-note{margin-top:12px;background:#fbf1e3;border:1px dashed #d9b98a;border-radius:6px;padding:10px 12px;font-size:12.5px;color:#6d4d3b;line-height:1.5}
+  .return-status-note.approved{background:#eef3e6;border:1px solid #c7d6b6;color:#3f5c33}
+  .return-status-note.rejected{background:#faeae7;border:1px solid #e3bcb4;color:#8a3226}
   .return-form{margin-top:14px;padding-top:14px;border-top:1px dashed #e6d5c0}
   .return-form label{margin:12px 0 5px;font-size:12.5px}
   .return-form textarea{width:100%;border:1px solid #dfcdb8;border-radius:5px;padding:10px;font:13.5px "DM Sans";outline-color:var(--orange);resize:vertical;box-sizing:border-box}
@@ -300,10 +302,24 @@
       return '<button type="button" class="cancel-order-btn" data-order="' + order.id + '">Cancel this order</button>';
     }
 
+    function returnStatusMessage(status) {
+      if (status === 'Approved') return '✓ Approved — we will be in touch with next steps for your replacement.';
+      if (status === 'Rejected') return 'This request was not approved. Contact us on WhatsApp or email if you have questions.';
+      return 'Submitted and awaiting review. Check back here for updates, or we will contact you directly.';
+    }
+    function returnStatusClass(status) {
+      if (status === 'Approved') return 'approved';
+      if (status === 'Rejected') return 'rejected';
+      return '';
+    }
+
     function returnSectionHtml(order) {
       var record = Store.getReturnRequestForOrder(order.id);
       if (record) {
-        return '<div class="return-status-note">Return/replacement request submitted (status: ' + Store.escapeHtml(record.status || 'Pending') + '). We will contact you at ' + Store.escapeHtml(record.email || '') + ' or on your phone once it has been reviewed.</div>';
+        var status = record.status || 'Pending';
+        return '<div class="return-status-note ' + returnStatusClass(status) + '" data-return-id="' + Store.escapeHtml(record.id) + '" data-order-id="' + Store.escapeHtml(order.id) + '" data-email="' + Store.escapeHtml(record.email || '') + '">' +
+          'Return/replacement request: <strong class="return-live-status">' + Store.escapeHtml(status) + '</strong>' +
+          '<div class="return-status-msg">' + returnStatusMessage(status) + '</div></div>';
       }
       if (order.status === 'Cancelled') return '';
       var customer = Store.getCustomer() || {};
@@ -346,6 +362,32 @@
           '<div class="order-right"><span class="order-total">' + Store.formatMoney(order.total) + '</span><span class="status-badge ' + badgeClass + '">' + Store.escapeHtml(order.status) + '</span></div></summary>' +
           '<div class="order-body">' + itemsHtml + '<div class="addr">Delivering to ' + Store.escapeHtml(addr.name) + ', ' + Store.escapeHtml(addr.city) + ', ' + Store.escapeHtml(addr.state) + ' — ' + Store.escapeHtml(addr.pincode) + '</div>' + cancelButtonHtml(order) + returnSectionHtml(order) + '</div></details>';
       }).join('');
+    }
+
+    // After rendering, check the live status of any submitted return requests
+    // (they may have been Approved/Rejected by the admin since this browser
+    // last checked) and update the note in place, without collapsing any
+    // <details> the customer already had open.
+    function refreshReturnStatuses() {
+      document.querySelectorAll('.return-status-note[data-return-id]').forEach(function (el) {
+        var id = el.dataset.returnId, orderId = el.dataset.orderId, email = el.dataset.email;
+        fetch('/api/returns/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: id, email: email })
+        }).then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (data) {
+            if (!data || !data.ok) return;
+            var record = Store.getReturnRequestForOrder(orderId) || {};
+            if (record.status === data.status) return;
+            record.status = data.status;
+            Store.saveReturnRequestForOrder(orderId, record);
+            el.className = 'return-status-note ' + returnStatusClass(data.status);
+            el.querySelector('.return-live-status').textContent = data.status;
+            el.querySelector('.return-status-msg').textContent = returnStatusMessage(data.status);
+          })
+          .catch(function () { /* keep showing the last known status silently */ });
+      });
     }
 
     var ordersContainer = document.getElementById('orders-container');
@@ -451,6 +493,7 @@
 
     loadCustomer();
     renderOrders();
+    refreshReturnStatuses();
     renderWishlist();
   </script>
 </body>
