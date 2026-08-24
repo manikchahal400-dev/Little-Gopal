@@ -10,6 +10,7 @@
   var PRODUCTS_KEY = 'littleGopalProducts';
   var WISHLIST_KEY = 'littleGopalWishlist';
   var REVIEWS_KEY = 'littleGopalReviews';
+  var RETURN_REQUESTS_KEY = 'littleGopalReturnRequests';
   var COUPONS = { GOPAL10: 0.10 };
   var FREE_SHIPPING_FROM = 999;
   var SHIPPING_FEE = 49;
@@ -285,6 +286,20 @@
   function getCustomer() { return readJSON(CUSTOMER_KEY, null); }
   function saveCustomer(customer) { localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer)); }
 
+  // Remembers, per order, whether a return/replacement request has already
+  // been submitted for it (and its last known status) so the "Apply for
+  // return" button doesn't show again on this browser after submitting.
+  // The actual request lives in shared server storage (see api/returns/*) so
+  // the admin can see it from any device -- this local record is purely a
+  // "did I already submit this?" UI memory, not the source of truth.
+  function getReturnRequests() { return readJSON(RETURN_REQUESTS_KEY, {}); }
+  function getReturnRequestForOrder(orderId) { return getReturnRequests()[orderId] || null; }
+  function saveReturnRequestForOrder(orderId, record) {
+    var all = getReturnRequests();
+    all[orderId] = record;
+    localStorage.setItem(RETURN_REQUESTS_KEY, JSON.stringify(all));
+  }
+
   function getOrders() { return readJSON(ORDERS_KEY, []); }
   function placeOrder(order) {
     var orders = getOrders();
@@ -416,6 +431,7 @@
     getCart: getCart, addToCart: addToCart, setQty: setQty, removeFromCart: removeFromCart, clearCart: clearCart,
     getTotals: getTotals, openDrawer: openDrawer_, renderDrawer: renderDrawer,
     getCustomer: getCustomer, saveCustomer: saveCustomer,
+    getReturnRequestForOrder: getReturnRequestForOrder, saveReturnRequestForOrder: saveReturnRequestForOrder,
     getOrders: getOrders, placeOrder: placeOrder, getOrder: getOrder, updateOrderStatus: updateOrderStatus, makeOrderId: makeOrderId,
     getProducts: getProducts, addProduct: addProduct, updateProduct: updateProduct, deleteProduct: deleteProduct,
     getProductsByCategory: getProductsByCategory, getFeaturedProducts: getFeaturedProducts,

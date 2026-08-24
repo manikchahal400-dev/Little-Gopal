@@ -49,6 +49,18 @@
   .empty-orders strong{display:block;font:600 20px "Playfair Display"}
   .empty-orders span{display:block;font-size:13px;color:#735850;margin-top:6px;line-height:1.5}
   .empty-orders a{display:inline-block;margin-top:16px;background:var(--maroon);color:#fff;text-decoration:none;padding:11px 18px;border-radius:4px;font-weight:700;font-size:13px}
+  .return-toggle{margin-top:12px;border:1px solid var(--maroon);background:none;color:var(--maroon);padding:9px 14px;border-radius:5px;font-weight:700;font-size:12.5px;cursor:pointer}
+  .return-status-note{margin-top:12px;background:#fbf1e3;border:1px dashed #d9b98a;border-radius:6px;padding:10px 12px;font-size:12.5px;color:#6d4d3b;line-height:1.5}
+  .return-form{margin-top:14px;padding-top:14px;border-top:1px dashed #e6d5c0}
+  .return-form label{margin:12px 0 5px;font-size:12.5px}
+  .return-form textarea{width:100%;border:1px solid #dfcdb8;border-radius:5px;padding:10px;font:13.5px "DM Sans";outline-color:var(--orange);resize:vertical;box-sizing:border-box}
+  .return-form input{font-size:13.5px}
+  .return-note{font-size:12px;color:#6d4d3b;background:#fbf1e3;border:1px dashed #d9b98a;border-radius:6px;padding:9px 11px;margin:0 0 4px}
+  .return-images-preview{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0}
+  .return-images-preview img{width:56px;height:56px;object-fit:cover;border-radius:5px;border:1px solid #eee0cf}
+  .return-form .save-btn{margin-right:8px;margin-top:16px}
+  .cancel-btn{border:1px solid var(--maroon);background:none;color:var(--maroon);padding:12px 18px;border-radius:5px;font-weight:700;cursor:pointer;font-size:14px;margin-top:16px}
+  .return-error{font-size:12.5px;color:#b44b32;margin-top:8px;min-height:14px}
   .login-card p{font-size:13px;color:#74544e;line-height:1.6;margin:0 0 6px}
   .login-error{font-size:12.5px;color:#b44b32;margin-top:10px;min-height:14px}
   .verified-row{display:flex;align-items:center;gap:8px;background:#f0f5ea;border:1px solid #dae3cf;border-radius:6px;padding:10px 12px;margin:14px 0;font-size:13px;color:#43602f}
@@ -270,6 +282,41 @@
 
     var STATUS_CLASS = { 'Cancelled': 'cancelled', 'Confirmed': 'confirmed' };
 
+    // Return / replacement requests — submitted here, but stored server-side
+    // (not localStorage) so the admin can see and act on them from a
+    // different device. This browser only remembers "did I already submit
+    // one for this order?" so the button doesn't reappear after submitting.
+    var pendingReturnImages = {}; // orderId -> array of compressed data URIs, while the form is open
+
+    function returnSectionHtml(order) {
+      var record = Store.getReturnRequestForOrder(order.id);
+      if (record) {
+        return '<div class="return-status-note">Return/replacement request submitted (status: ' + Store.escapeHtml(record.status || 'Pending') + '). We will contact you at ' + Store.escapeHtml(record.email || '') + ' or on your phone once it has been reviewed.</div>';
+      }
+      if (order.status === 'Cancelled') return '';
+      var customer = Store.getCustomer() || {};
+      var prefillPhone = customer.phone || order.customer.phone || '';
+      var prefillEmail = customer.email || order.customer.email || '';
+      return '<button type="button" class="return-toggle" data-order="' + order.id + '">Apply for return / replacement</button>' +
+        '<form class="return-form" data-order="' + order.id + '" hidden>' +
+        '<div class="return-note">Please upload clear photos of the product and what is wrong with it — this helps us confirm the issue is genuine and act quickly. Little Gopal offers a replacement for defective/quality-issue items, not a cash refund.</div>' +
+        '<label>What is the issue with the product?</label>' +
+        '<textarea class="ret-issue" rows="2" required placeholder="e.g. The poshak arrived torn near the collar"></textarea>' +
+        '<label>Why are you returning it?</label>' +
+        '<textarea class="ret-reason" rows="2" required placeholder="e.g. Damaged on arrival / Wrong item received"></textarea>' +
+        '<label>Your mobile number</label>' +
+        '<input class="ret-phone" type="tel" required placeholder="Your mobile number" value="' + Store.escapeHtml(prefillPhone) + '" />' +
+        '<label>Your email address</label>' +
+        '<input class="ret-email" type="email" required placeholder="you@example.com" value="' + Store.escapeHtml(prefillEmail) + '" />' +
+        '<label>Photos of the product (up to 4, real-time photos preferred)</label>' +
+        '<input class="ret-images" type="file" accept="image/*" capture="environment" multiple />' +
+        '<div class="return-images-preview"></div>' +
+        '<button class="save-btn" type="submit">Submit request</button>' +
+        '<button type="button" class="cancel-btn ret-cancel">Cancel</button>' +
+        '<div class="return-error"></div>' +
+        '</form>';
+    }
+
     function renderOrders() {
       var orders = Store.getOrders();
       var container = document.getElementById('orders-container');
@@ -285,9 +332,89 @@
         var addr = order.customer;
         return '<details class="order-card"><summary class="order-head"><div><strong>Order #' + order.id + '</strong><div class="meta">' + new Date(order.date).toLocaleDateString('en-IN') + ' · ' + order.items.length + ' item(s) · ' + Store.escapeHtml(order.paymentMethod) + '</div></div>' +
           '<div class="order-right"><span class="order-total">' + Store.formatMoney(order.total) + '</span><span class="status-badge ' + badgeClass + '">' + Store.escapeHtml(order.status) + '</span></div></summary>' +
-          '<div class="order-body">' + itemsHtml + '<div class="addr">Delivering to ' + Store.escapeHtml(addr.name) + ', ' + Store.escapeHtml(addr.city) + ', ' + Store.escapeHtml(addr.state) + ' — ' + Store.escapeHtml(addr.pincode) + '</div></div></details>';
+          '<div class="order-body">' + itemsHtml + '<div class="addr">Delivering to ' + Store.escapeHtml(addr.name) + ', ' + Store.escapeHtml(addr.city) + ', ' + Store.escapeHtml(addr.state) + ' — ' + Store.escapeHtml(addr.pincode) + '</div>' + returnSectionHtml(order) + '</div></details>';
       }).join('');
     }
+
+    var ordersContainer = document.getElementById('orders-container');
+    ordersContainer.addEventListener('click', function (event) {
+      var toggleBtn = event.target.closest('.return-toggle');
+      var cancelBtn = event.target.closest('.ret-cancel');
+      if (toggleBtn) {
+        event.preventDefault();
+        var form = toggleBtn.nextElementSibling;
+        if (form && form.classList.contains('return-form')) form.hidden = !form.hidden;
+      } else if (cancelBtn) {
+        var returnForm = cancelBtn.closest('.return-form');
+        returnForm.reset();
+        returnForm.querySelector('.return-images-preview').innerHTML = '';
+        returnForm.querySelector('.return-error').textContent = '';
+        delete pendingReturnImages[returnForm.dataset.order];
+        returnForm.hidden = true;
+      }
+    });
+
+    ordersContainer.addEventListener('change', function (event) {
+      var fileInput = event.target.closest('.ret-images');
+      if (!fileInput) return;
+      var form = fileInput.closest('.return-form');
+      var orderId = form.dataset.order;
+      var preview = form.querySelector('.return-images-preview');
+      var files = Array.from(fileInput.files || []).slice(0, 4);
+      preview.innerHTML = '<span style="font-size:12px;color:#8a6a61">Processing photos…</span>';
+      Promise.all(files.map(function (file) { return Store.compressImage(file, 480, 0.6); }))
+        .then(function (dataUris) {
+          pendingReturnImages[orderId] = dataUris;
+          preview.innerHTML = dataUris.map(function (src) { return '<img src="' + src + '" alt="">'; }).join('');
+        })
+        .catch(function () {
+          preview.innerHTML = '<span style="font-size:12px;color:#b44b32">Could not read one of those photos — please try again.</span>';
+          delete pendingReturnImages[orderId];
+        });
+    });
+
+    ordersContainer.addEventListener('submit', function (event) {
+      var form = event.target.closest('.return-form');
+      if (!form) return;
+      event.preventDefault();
+      var orderId = form.dataset.order;
+      var errorEl = form.querySelector('.return-error');
+      var images = pendingReturnImages[orderId] || [];
+      errorEl.textContent = '';
+      if (!images.length) { errorEl.textContent = 'Please upload at least one clear photo of the product and the problem.'; return; }
+      var order = Store.getOrders().find(function (o) { return o.id === orderId; });
+      var customer = Store.getCustomer() || {};
+      var submitBtn = form.querySelector('.save-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting…';
+      fetch('/api/returns/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: orderId,
+          name: customer.name || (order && order.customer && order.customer.name) || '',
+          email: form.querySelector('.ret-email').value.trim(),
+          phone: form.querySelector('.ret-phone').value.trim(),
+          issue: form.querySelector('.ret-issue').value.trim(),
+          reason: form.querySelector('.ret-reason').value.trim(),
+          images: images,
+          orderSnapshot: order || null
+        })
+      }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+        .then(function (res) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit request';
+          if (!res.ok) { errorEl.textContent = res.data.error || 'Something went wrong. Please try again.'; return; }
+          Store.saveReturnRequestForOrder(orderId, { id: res.data.id, status: 'Pending', email: form.querySelector('.ret-email').value.trim(), submittedAt: new Date().toISOString() });
+          delete pendingReturnImages[orderId];
+          renderOrders();
+        })
+        .catch(function () {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit request';
+          errorEl.textContent = 'Could not reach the server. Please check your connection and try again.';
+        });
+    });
 
     function renderWishlist() {
       var ids = Store.getWishlist();

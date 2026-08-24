@@ -149,6 +149,53 @@ async function sendMsg91Sms(toNumber, otp) {
   }
 }
 
+function parseCookies(header) {
+  const out = {};
+  (header || '').split(';').forEach(function (part) {
+    const idx = part.indexOf('=');
+    if (idx === -1) return;
+    out[part.slice(0, idx).trim()] = decodeURIComponent(part.slice(idx + 1).trim());
+  });
+  return out;
+}
+
+// Shared check for any endpoint that should only work for the logged-in admin
+// (same cookie + secret as api/auth/*). Returns true/false, never throws.
+function requireAdmin(req) {
+  const cookies = parseCookies(req.headers.cookie);
+  const payload = verifyToken(cookies.lg_admin_session, process.env.SESSION_SECRET);
+  return !!payload && Date.now() < payload.exp;
+}
+
+// --- Shared key-value storage (Vercel/Upstash Redis REST API) ---
+// The site otherwise has no backend database -- everything else lives in each
+// visitor's own browser localStorage. Return requests need to be visible to
+// the admin from a *different* device than the customer who submitted them,
+// so this is the one place real shared server-side storage is required.
+// Add the "Upstash for Redis" integration from the Vercel dashboard's Storage
+// tab to populate KV_REST_API_URL / KV_REST_API_TOKEN automatically.
+async function kvCommand(args) {
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  if (!url || !token) throw new Error('Storage is not configured yet.');
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args)
+  });
+  const data = await resp.json().catch(function () { return {}; });
+  if (!resp.ok || data.error) throw new Error(data.error || ('Storage error: ' + resp.status));
+  return data.result;
+}
+async function kvGetJSON(key, fallback) {
+  const raw = await kvCommand(['GET', key]);
+  if (raw === null || raw === undefined) return fallback;
+  try { return JSON.parse(raw); } catch (e) { return fallback; }
+}
+async function kvSetJSON(key, value) {
+  await kvCommand(['SET', key, JSON.stringify(value)]);
+}
+
 function setCors(req, res) {
   const origin = process.env.ALLOWED_ORIGIN || '';
   if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
@@ -161,5 +208,6 @@ module.exports = {
   b64url, b64urlDecode, hmac, sha256, timingSafeEqualStr,
   signToken, verifyToken, randomOtp, readJsonBody, setCors, rateLimit,
   sendResendEmail, sendMsg91Sms,
+  parseCookies, requireAdmin, kvCommand, kvGetJSON, kvSetJSON,
   base32Decode, verifyTotp
 };

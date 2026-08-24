@@ -75,6 +75,26 @@
   .prod-row button{border:0;background:#f6e6da;color:#a34b2a;padding:7px 11px;border-radius:5px;font-weight:700;cursor:pointer;font-size:12px}
   .two-col{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
 
+  .return-card{border-top:1px solid #eee0cf;padding:14px 0}
+  .return-card:first-of-type{border-top:0}
+  .return-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .return-head strong{font-family:"Playfair Display";font-size:16px}
+  .return-head .meta{font-size:12px;color:#8a6a61;margin-top:3px}
+  .return-status{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#fbeede;color:#8a542a;white-space:nowrap}
+  .return-status[data-status="Approved"]{background:#e9efdf;color:#43602f}
+  .return-status[data-status="Rejected"]{background:#f6dede;color:#a3372a}
+  .return-body{padding:12px 0 4px;display:grid;grid-template-columns:1.3fr 1fr;gap:24px}
+  .return-body h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#8a5b3a}
+  .return-body p{margin:2px 0;font-size:13px;color:#5a423d;line-height:1.5}
+  .return-images{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .return-images img{width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #eee0cf;cursor:zoom-in}
+  .return-actions{margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .return-actions button{border:0;border-radius:5px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:12.5px}
+  .return-actions button:disabled{opacity:.5;cursor:default}
+  .return-actions .approve-btn{background:#e9efdf;color:#43602f}
+  .return-actions .reject-btn{background:#f6dede;color:#a3372a}
+  #returns-badge{background:#c45a2b;color:#fff;border-radius:20px;font-size:10px;padding:1px 7px;margin-left:5px}
+
   @media(max-width:820px){.stat-grid{grid-template-columns:1fr 1fr}.order-body{grid-template-columns:1fr}.two-col{grid-template-columns:1fr}}
   @media(max-width:480px){.wrap{padding:20px 16px 60px}.stat-grid{grid-template-columns:1fr}}
 </style>
@@ -111,6 +131,7 @@
     <nav class="tabs">
       <button class="tab-btn" data-tab="overview">Overview</button>
       <button class="tab-btn" data-tab="orders">Orders</button>
+      <button class="tab-btn" data-tab="returns">Returns<span id="returns-badge" hidden></span></button>
       <button class="tab-btn active" data-tab="products">Products</button>
     </nav>
 
@@ -140,6 +161,14 @@
           <h2>All orders</h2>
           <p class="hint">Update an order's status as it moves through packing and delivery.</p>
           <div id="orders-list"></div>
+        </div>
+      </section>
+
+      <section id="tab-returns" hidden>
+        <div class="card">
+          <h2>Return &amp; replacement requests</h2>
+          <p class="hint">Customers submit these from their order history along with photos of the issue. Approve to start a replacement, or reject with an optional note. (Little Gopal offers replacements, not cash refunds — see the Replacement Policy page.)</p>
+          <div id="returns-list"></div>
         </div>
       </section>
 
@@ -273,7 +302,7 @@
       btn.addEventListener('click', function () {
         document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
-        ['overview', 'orders', 'products'].forEach(function (name) {
+        ['overview', 'orders', 'returns', 'products'].forEach(function (name) {
           document.getElementById('tab-' + name).hidden = name !== btn.dataset.tab;
         });
       });
@@ -325,6 +354,63 @@
       document.getElementById('stat-cod').textContent = orders.filter(function (o) { return o.paymentMethod === 'Cash on Delivery' && o.status !== 'Delivered' && o.status !== 'Cancelled'; }).length;
       document.getElementById('stat-products').textContent = products.length;
     }
+
+    // Return & replacement requests — these live in shared server storage
+    // (not localStorage), since a customer submits from their own device and
+    // this admin dashboard needs to see it regardless of whose browser it is.
+    var returnsCache = [];
+    function returnCardHtml(r) {
+      var imagesHtml = (r.images || []).map(function (src) {
+        return '<img src="' + src + '" alt="Return photo" data-full="' + src + '">';
+      }).join('');
+      var snapshotHtml = '';
+      if (r.orderSnapshot) {
+        var items = (r.orderSnapshot.items || []).map(function (item) { return Store.escapeHtml(item.name) + ' × ' + item.qty; }).join(', ');
+        snapshotHtml = '<p><strong>Order items:</strong> ' + (items || '—') + '</p><p><strong>Order total:</strong> ' + Store.formatMoney(r.orderSnapshot.total || 0) + '</p>';
+      }
+      return '<div class="return-card">' +
+        '<div class="return-head"><div><strong>' + Store.escapeHtml(r.id) + ' — Order #' + Store.escapeHtml(r.orderId) + '</strong>' +
+        '<div class="meta">' + new Date(r.submittedAt).toLocaleString('en-IN') + ' · ' + Store.escapeHtml(r.name) + '</div></div>' +
+        '<span class="return-status" data-status="' + Store.escapeHtml(r.status) + '">' + Store.escapeHtml(r.status) + '</span></div>' +
+        '<div class="return-body">' +
+        '<div><h4>Customer</h4><p>' + Store.escapeHtml(r.name) + '</p><p>' + Store.escapeHtml(r.email) + ' · ' + Store.escapeHtml(r.phone) + '</p>' + snapshotHtml + '</div>' +
+        '<div><h4>Issue reported</h4><p>' + Store.escapeHtml(r.issue) + '</p><h4 style="margin-top:10px">Reason for return</h4><p>' + Store.escapeHtml(r.reason) + '</p></div>' +
+        '</div>' +
+        (imagesHtml ? '<h4>Photos</h4><div class="return-images">' + imagesHtml + '</div>' : '') +
+        '<div class="return-actions">' +
+        '<button type="button" class="approve-btn" data-id="' + r.id + '" data-status="Approved"' + (r.status === 'Approved' ? ' disabled' : '') + '>Approve replacement</button>' +
+        '<button type="button" class="reject-btn" data-id="' + r.id + '" data-status="Rejected"' + (r.status === 'Rejected' ? ' disabled' : '') + '>Reject</button>' +
+        (r.adminNote ? '<span style="font-size:12px;color:#8a6a61">Note: ' + Store.escapeHtml(r.adminNote) + '</span>' : '') +
+        '</div></div>';
+    }
+    function renderReturns() {
+      var container = document.getElementById('returns-list');
+      if (!container) return;
+      container.innerHTML = '<div class="empty-note">Loading return requests…</div>';
+      api('/api/returns/list').then(function (result) {
+        if (!result.ok) { container.innerHTML = '<div class="empty-note">' + Store.escapeHtml((result.data && result.data.error) || 'Could not load return requests.') + '</div>'; return; }
+        returnsCache = result.data.requests || [];
+        var pendingCount = returnsCache.filter(function (r) { return r.status === 'Pending'; }).length;
+        var badge = document.getElementById('returns-badge');
+        if (badge) { badge.textContent = pendingCount; badge.hidden = !pendingCount; }
+        container.innerHTML = returnsCache.length ? returnsCache.map(returnCardHtml).join('') : '<div class="empty-note">No return requests yet.</div>';
+      }).catch(function () {
+        container.innerHTML = '<div class="empty-note">Could not reach the server. Please check your connection.</div>';
+      });
+    }
+    document.getElementById('returns-list').addEventListener('click', function (event) {
+      var img = event.target.closest('img[data-full]');
+      if (img) { window.open(img.dataset.full, '_blank'); return; }
+      var btn = event.target.closest('button[data-id]');
+      if (!btn) return;
+      var id = btn.dataset.id, status = btn.dataset.status;
+      var note = status === 'Rejected' ? (prompt('Optional note for this rejection (kept private, for your own records):') || '') : '';
+      btn.disabled = true;
+      api('/api/returns/update', { id: id, status: status, adminNote: note }).then(function (result) {
+        if (!result.ok) { alert((result.data && result.data.error) || 'Could not update this request.'); btn.disabled = false; return; }
+        renderReturns();
+      }).catch(function () { alert('Could not reach the server.'); btn.disabled = false; });
+    });
 
     // Products — reads and writes the same catalog the storefront renders from.
     var categorySelect = document.getElementById('p-category');
@@ -481,7 +567,7 @@
       }
     });
 
-    function renderAll() { renderOrders(); renderProducts(); renderStats(); }
+    function renderAll() { renderOrders(); renderProducts(); renderStats(); renderReturns(); }
   </script>
 </body>
 </html>
