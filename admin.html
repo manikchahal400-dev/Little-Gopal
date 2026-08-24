@@ -143,6 +143,14 @@
           <div class="stat-card"><span>Pending COD</span><strong id="stat-cod">0</strong></div>
           <div class="stat-card"><span>Products listed</span><strong id="stat-products">0</strong></div>
         </div>
+        <div class="card" style="margin-bottom:26px">
+          <h2>Payment settings</h2>
+          <p class="hint">Turn Cash on Delivery on or off for the whole store. Customers on any device see this instantly at checkout.</p>
+          <label style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:14px;cursor:pointer">
+            <input type="checkbox" id="cod-toggle" checked style="width:auto;transform:scale(1.3)" />
+            Cash on Delivery is <span id="cod-status">enabled</span>
+          </label>
+        </div>
         <div class="two-col">
           <div class="card">
             <h2>Recent orders</h2>
@@ -259,7 +267,28 @@
       loginScreen.hidden = true;
       dashboard.hidden = false;
       renderAll();
+      loadCodSetting();
     }
+
+    // Cash on Delivery on/off -- lives in shared storage (not localStorage)
+    // since checkout.html needs to see it from every customer's own device.
+    var codToggle = document.getElementById('cod-toggle'), codStatus = document.getElementById('cod-status');
+    function loadCodSetting() {
+      fetch('/api/settings/get').then(function (r) { return r.json(); }).then(function (data) {
+        var enabled = !(data && data.settings && data.settings.codEnabled === false);
+        codToggle.checked = enabled;
+        codStatus.textContent = enabled ? 'enabled' : 'disabled';
+      }).catch(function () { /* leave the toggle at its default; retry on next dashboard load */ });
+    }
+    codToggle.addEventListener('change', function () {
+      var enabled = codToggle.checked;
+      codToggle.disabled = true;
+      api('/api/settings/update', { codEnabled: enabled }).then(function (result) {
+        codToggle.disabled = false;
+        if (!result.ok) { alert((result.data && result.data.error) || 'Could not save this setting.'); codToggle.checked = !enabled; return; }
+        codStatus.textContent = enabled ? 'enabled' : 'disabled';
+      }).catch(function () { codToggle.disabled = false; codToggle.checked = !enabled; alert('Could not reach the server.'); });
+    });
 
     // If a valid session cookie already exists (e.g. page reloaded), skip straight to the dashboard.
     api('/api/auth/session').then(function (result) {

@@ -31,6 +31,7 @@
   .pay-options{display:grid;gap:10px;margin-top:6px}
   .pay-option{border:1px solid #e0cdb7;border-radius:7px;padding:13px 14px;display:flex;align-items:flex-start;gap:11px;cursor:pointer}
   .pay-option.active{border-color:var(--maroon);background:#f7ebda}
+  .pay-option.disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
   .pay-option input{width:auto;margin-top:3px}
   .pay-option strong{display:block;font:600 15px "DM Sans"}
   .pay-option span{display:block;font-size:12px;color:#77584f;margin-top:2px;line-height:1.5}
@@ -205,6 +206,21 @@
         label.classList.add('active');
       });
     });
+
+    // Cash on Delivery can be switched off store-wide from the admin dashboard.
+    // This has to be checked live from shared storage (not localStorage) since
+    // the admin toggles it from their own browser, and every customer's own
+    // device needs to see the current setting.
+    fetch('/api/settings/get').then(function (r) { return r.json(); }).then(function (data) {
+      var enabled = !(data && data.settings && data.settings.codEnabled === false);
+      if (!enabled) {
+        var codOption = document.getElementById('opt-cod');
+        codOption.classList.add('disabled');
+        codOption.classList.remove('active');
+        codOption.querySelector('input').disabled = true;
+        codOption.querySelector('span').textContent = 'Temporarily unavailable — please pay online instead.';
+      }
+    }).catch(function () { /* if this fails, COD just stays available as normal */ });
 
     function renderSummary() {
       var totals = Store.getTotals(couponCode);
