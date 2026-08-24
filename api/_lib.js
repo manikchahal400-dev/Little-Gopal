@@ -117,6 +117,38 @@ function rateLimit(req, bucketName, maxRequests, windowMs) {
   return { limited: record.count > maxRequests, retryAfterMs: Math.max(record.resetAt - now, 0) };
 }
 
+async function sendResendEmail(toEmail, subject, text) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM || 'Little Gopal <onboarding@resend.dev>';
+  const resp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: from, to: [toEmail], subject: subject, text: text })
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error('Resend send failed: ' + resp.status + ' ' + errText);
+  }
+}
+
+async function sendMsg91Sms(toNumber, otp) {
+  const authKey = process.env.MSG91_AUTH_KEY;
+  const templateId = process.env.MSG91_TEMPLATE_ID;
+  const senderId = process.env.MSG91_SENDER_ID || 'LGOPAL';
+  const mobile = toNumber.replace(/^\+/, ''); // MSG91 expects country code without '+', e.g. 919876543210
+  const resp = await fetch('https://control.msg91.com/api/v5/otp?otp=' + encodeURIComponent(otp) +
+    '&mobile=' + encodeURIComponent(mobile) +
+    (templateId ? '&template_id=' + encodeURIComponent(templateId) : '') +
+    (senderId ? '&sender=' + encodeURIComponent(senderId) : ''), {
+    method: 'POST',
+    headers: { 'authkey': authKey, 'Content-Type': 'application/json' }
+  });
+  const data = await resp.json().catch(function () { return {}; });
+  if (!resp.ok || (data && data.type === 'error')) {
+    throw new Error('MSG91 send failed: ' + (data && data.message ? data.message : resp.status));
+  }
+}
+
 function setCors(req, res) {
   const origin = process.env.ALLOWED_ORIGIN || '';
   if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
@@ -128,5 +160,6 @@ function setCors(req, res) {
 module.exports = {
   b64url, b64urlDecode, hmac, sha256, timingSafeEqualStr,
   signToken, verifyToken, randomOtp, readJsonBody, setCors, rateLimit,
+  sendResendEmail, sendMsg91Sms,
   base32Decode, verifyTotp
 };

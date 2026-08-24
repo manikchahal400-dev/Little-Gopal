@@ -50,6 +50,12 @@
   .empty-orders span{display:block;font-size:13px;color:#735850;margin-top:6px;line-height:1.5}
   .empty-orders a{display:inline-block;margin-top:16px;background:var(--maroon);color:#fff;text-decoration:none;padding:11px 18px;border-radius:4px;font-weight:700;font-size:13px}
   .login-card p{font-size:13px;color:#74544e;line-height:1.6;margin:0 0 6px}
+  .method-toggle{display:flex;gap:8px;margin-bottom:6px}
+  .method-btn{flex:1;border:1px solid #dfcdb8;background:#fffdf9;color:#5a423d;padding:10px;border-radius:5px;font-weight:700;font-size:13px;cursor:pointer}
+  .method-btn.active{border-color:var(--maroon);background:#f7ebda;color:var(--maroon)}
+  .login-error{font-size:12.5px;color:#b44b32;margin-top:10px;min-height:14px}
+  .verified-row{display:flex;align-items:center;gap:8px;background:#f0f5ea;border:1px solid #dae3cf;border-radius:6px;padding:10px 12px;margin:14px 0;font-size:13px;color:#43602f}
+  .link-btn{background:none;border:0;color:var(--maroon);font-weight:700;font-size:13px;cursor:pointer;padding:0;text-decoration:underline;margin-top:10px}
   .wishlist-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
   .wish-card{position:relative;background:#fffdf9;border:1px solid #edddc9;border-radius:8px;padding:14px;text-align:center;text-decoration:none;color:var(--ink);transition:.2s}
   .wish-card:hover{transform:translateY(-3px);box-shadow:0 8px 16px #55352b1a}
@@ -69,19 +75,47 @@
 
   <main class="wrap layout">
     <div class="card" id="profile-card">
-      <h2 id="profile-title">Log in</h2>
-      <p class="hint" id="profile-hint">Enter your details below — this creates (or updates) your Little Gopal account on this browser.</p>
-      <form id="profile-form">
-        <label for="p-name">Full name</label>
-        <input id="p-name" required placeholder="Your name" />
-        <label for="p-email">Email address</label>
-        <input id="p-email" type="email" required placeholder="you@example.com" />
-        <label for="p-phone">Phone number</label>
-        <input id="p-phone" type="tel" required placeholder="Your phone number" />
-        <button class="save-btn" type="submit">Save details</button>
-        <button class="logout-btn" type="button" id="logout-btn" hidden>Log out</button>
-        <div class="save-msg" id="save-msg"></div>
-      </form>
+      <!-- Step 1: choose method + enter email/mobile -->
+      <div id="step-request">
+        <h2>Log in to your account</h2>
+        <p class="hint">We'll send a one-time code to verify it's really you.</p>
+        <div class="method-toggle">
+          <button type="button" class="method-btn active" id="method-email-btn">Email</button>
+          <button type="button" class="method-btn" id="method-mobile-btn">Mobile</button>
+        </div>
+        <form id="request-form">
+          <label for="login-value" id="login-value-label">Email address</label>
+          <input id="login-value" type="email" required placeholder="you@example.com" />
+          <button class="save-btn" type="submit" id="request-submit">Send code</button>
+          <div class="login-error" id="request-error"></div>
+        </form>
+      </div>
+
+      <!-- Step 2: enter the code -->
+      <div id="step-verify" hidden>
+        <h2>Enter your code</h2>
+        <p class="hint" id="verify-hint">We sent a 6-digit code — enter it below.</p>
+        <form id="verify-form">
+          <label for="otp-code">Verification code</label>
+          <input id="otp-code" inputmode="numeric" maxlength="6" required placeholder="6-digit code" autocomplete="one-time-code" />
+          <button class="save-btn" type="submit" id="verify-submit">Verify</button>
+          <div class="login-error" id="verify-error"></div>
+          <button type="button" class="link-btn" id="back-to-request">← Use a different email/mobile</button>
+        </form>
+      </div>
+
+      <!-- Step 3: logged in — profile -->
+      <div id="step-profile" hidden>
+        <h2 id="profile-title">My account</h2>
+        <div class="verified-row" id="verified-row">✓ Verified</div>
+        <form id="profile-form">
+          <label for="p-name">Full name</label>
+          <input id="p-name" required placeholder="Your name" />
+          <button class="save-btn" type="submit">Save name</button>
+          <button class="logout-btn" type="button" id="logout-btn">Log out</button>
+          <div class="save-msg" id="save-msg"></div>
+        </form>
+      </div>
     </div>
 
     <div class="card">
@@ -100,39 +134,169 @@
   <script src="cart.js"></script>
   <script>
     var Store = window.LittleGopalStore;
-    var form = document.getElementById('profile-form');
-    var nameInput = document.getElementById('p-name'), emailInput = document.getElementById('p-email'), phoneInput = document.getElementById('p-phone');
-    var logoutBtn = document.getElementById('logout-btn'), saveMsg = document.getElementById('save-msg');
+    var IDENTITY_KEY = 'littleGopalIdentity';
+
+    var stepRequest = document.getElementById('step-request');
+    var stepVerify = document.getElementById('step-verify');
+    var stepProfile = document.getElementById('step-profile');
+
+    var methodEmailBtn = document.getElementById('method-email-btn');
+    var methodMobileBtn = document.getElementById('method-mobile-btn');
+    var loginValueLabel = document.getElementById('login-value-label');
+    var loginValueInput = document.getElementById('login-value');
+    var requestForm = document.getElementById('request-form');
+    var requestSubmit = document.getElementById('request-submit');
+    var requestError = document.getElementById('request-error');
+
+    var verifyForm = document.getElementById('verify-form');
+    var verifyHint = document.getElementById('verify-hint');
+    var otpInput = document.getElementById('otp-code');
+    var verifySubmit = document.getElementById('verify-submit');
+    var verifyError = document.getElementById('verify-error');
+    var backToRequestBtn = document.getElementById('back-to-request');
+
+    var profileForm = document.getElementById('profile-form');
+    var nameInput = document.getElementById('p-name');
+    var logoutBtn = document.getElementById('logout-btn');
+    var saveMsg = document.getElementById('save-msg');
+    var verifiedRow = document.getElementById('verified-row');
+    var profileTitle = document.getElementById('profile-title');
+
+    var currentMethod = 'email';
+    var currentChallenge = null;
+
+    function getIdentity() {
+      try { return JSON.parse(localStorage.getItem(IDENTITY_KEY) || 'null'); } catch (e) { return null; }
+    }
+    function saveIdentity(identity) { localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity)); }
+    function clearIdentity() { localStorage.removeItem(IDENTITY_KEY); }
+
+    function showStep(step) {
+      stepRequest.hidden = step !== 'request';
+      stepVerify.hidden = step !== 'verify';
+      stepProfile.hidden = step !== 'profile';
+    }
+
+    function setMethod(method) {
+      currentMethod = method;
+      methodEmailBtn.classList.toggle('active', method === 'email');
+      methodMobileBtn.classList.toggle('active', method === 'mobile');
+      requestError.textContent = '';
+      if (method === 'email') {
+        loginValueLabel.textContent = 'Email address';
+        loginValueInput.type = 'email';
+        loginValueInput.placeholder = 'you@example.com';
+      } else {
+        loginValueLabel.textContent = 'Mobile number';
+        loginValueInput.type = 'tel';
+        loginValueInput.placeholder = '10-digit mobile number';
+      }
+      loginValueInput.value = '';
+    }
+    methodEmailBtn.addEventListener('click', function () { setMethod('email'); });
+    methodMobileBtn.addEventListener('click', function () { setMethod('mobile'); });
 
     function loadCustomer() {
-      var customer = Store.getCustomer();
-      var title = document.getElementById('profile-title'), hint = document.getElementById('profile-hint');
-      if (customer && customer.name) {
-        title.textContent = 'Radhe Radhe, ' + customer.name;
-        hint.textContent = 'Update your account details below.';
-        nameInput.value = customer.name || '';
-        emailInput.value = customer.email || '';
-        phoneInput.value = customer.phone || '';
-        logoutBtn.hidden = false;
+      var identity = getIdentity();
+      if (identity && identity.identityToken) {
+        var customer = Store.getCustomer();
+        profileTitle.textContent = customer && customer.name ? 'Radhe Radhe, ' + customer.name : 'My account';
+        verifiedRow.textContent = '✓ Verified via ' + (identity.method === 'email' ? 'email — ' + identity.value : 'mobile — ' + identity.value);
+        nameInput.value = (customer && customer.name) || '';
+        showStep('profile');
       } else {
-        title.textContent = 'Log in to Little Gopal';
-        hint.textContent = 'Enter your details below to create your account.';
-        logoutBtn.hidden = true;
+        showStep('request');
       }
     }
 
-    form.addEventListener('submit', function (event) {
+    requestForm.addEventListener('submit', function (event) {
       event.preventDefault();
-      Store.saveCustomer({ name: nameInput.value.trim(), email: emailInput.value.trim(), phone: phoneInput.value.trim() });
-      saveMsg.textContent = 'Your account details have been saved.';
+      requestError.textContent = '';
+      var value = loginValueInput.value.trim();
+      if (!value) return;
+      requestSubmit.disabled = true;
+      requestSubmit.textContent = 'Sending…';
+      fetch('/api/customer/login-start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method: currentMethod, value: value })
+      }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+        .then(function (res) {
+          requestSubmit.disabled = false;
+          requestSubmit.textContent = 'Send code';
+          if (!res.ok) { requestError.textContent = res.data.error || 'Something went wrong. Please try again.'; return; }
+          currentChallenge = res.data.challenge;
+          verifyHint.textContent = 'We sent a 6-digit code to ' + value + ' — enter it below. It expires in 5 minutes.';
+          otpInput.value = '';
+          verifyError.textContent = '';
+          showStep('verify');
+          otpInput.focus();
+        })
+        .catch(function () {
+          requestSubmit.disabled = false;
+          requestSubmit.textContent = 'Send code';
+          requestError.textContent = 'Could not reach the server. Please check your connection and try again.';
+        });
+    });
+
+    verifyForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      verifyError.textContent = '';
+      var code = otpInput.value.trim();
+      if (!code) return;
+      verifySubmit.disabled = true;
+      verifySubmit.textContent = 'Verifying…';
+      fetch('/api/customer/login-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challenge: currentChallenge, code: code })
+      }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+        .then(function (res) {
+          verifySubmit.disabled = false;
+          verifySubmit.textContent = 'Verify';
+          if (res.data && res.data.challenge) currentChallenge = res.data.challenge;
+          if (!res.ok || !res.data.verified) {
+            var msg = (res.data && res.data.error) || 'Incorrect code. Please try again.';
+            if (res.data && typeof res.data.attemptsLeft === 'number') msg += ' (' + res.data.attemptsLeft + ' attempt(s) left)';
+            verifyError.textContent = msg;
+            if (res.status === 400) { showStep('request'); requestError.textContent = res.data.error || ''; }
+            return;
+          }
+          saveIdentity({ method: res.data.method, value: res.data.value, identityToken: res.data.identityToken });
+          var existing = Store.getCustomer() || {};
+          var updated = { name: existing.name || '', email: existing.email || '', phone: existing.phone || '' };
+          if (res.data.method === 'email') updated.email = res.data.value; else updated.phone = res.data.value;
+          Store.saveCustomer(updated);
+          saveMsg.textContent = '';
+          loadCustomer();
+          renderOrders();
+        })
+        .catch(function () {
+          verifySubmit.disabled = false;
+          verifySubmit.textContent = 'Verify';
+          verifyError.textContent = 'Could not reach the server. Please check your connection and try again.';
+        });
+    });
+
+    backToRequestBtn.addEventListener('click', function () {
+      currentChallenge = null;
+      requestError.textContent = '';
+      showStep('request');
+    });
+
+    profileForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var existing = Store.getCustomer() || {};
+      Store.saveCustomer({ name: nameInput.value.trim(), email: existing.email || '', phone: existing.phone || '' });
+      saveMsg.textContent = 'Your name has been saved.';
       loadCustomer();
-      renderOrders();
     });
 
     logoutBtn.addEventListener('click', function () {
-      localStorage.removeItem(Store.CUSTOMER_KEY);
-      form.reset();
-      saveMsg.textContent = 'You have been logged out.';
+      clearIdentity();
+      saveMsg.textContent = '';
+      requestForm.reset();
+      setMethod('email');
       loadCustomer();
     });
 
