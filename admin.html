@@ -97,6 +97,30 @@
 
   @media(max-width:820px){.stat-grid{grid-template-columns:1fr 1fr}.order-body{grid-template-columns:1fr}.two-col{grid-template-columns:1fr}}
   @media(max-width:480px){.wrap{padding:20px 16px 60px}.stat-grid{grid-template-columns:1fr}}
+
+  /* Admin AI assistant */
+  .aai-toggle{position:fixed;right:23px;bottom:22px;z-index:60;border:0;border-radius:28px;background:var(--maroon);color:#fff8ec;padding:13px 18px;box-shadow:0 7px 20px #3b201d44;font:700 14px "DM Sans";cursor:pointer}
+  .aai-toggle span{font-size:18px;margin-right:6px}
+  .aai-panel{position:fixed;right:23px;bottom:82px;width:min(380px,calc(100vw - 34px));z-index:60;background:#fffdf8;border:1px solid #e5d1bd;border-radius:12px;box-shadow:0 18px 45px #3b201d33;overflow:hidden;display:none}
+  .aai-panel.open{display:block}
+  .aai-head{background:var(--maroon);color:#fff8ec;padding:15px 17px;display:flex;align-items:center;gap:10px}
+  .aai-head strong{font:700 19px "Playfair Display"}
+  .aai-head small{display:block;color:#e8d4bf;font-size:11px;margin-top:2px}
+  .aai-avatar{width:34px;height:34px;display:grid;place-items:center;background:var(--gold);border-radius:50%;font-size:19px;flex-shrink:0}
+  .aai-chat{height:320px;overflow:auto;padding:15px;background:#fffaf1}
+  .aai-message{max-width:90%;padding:10px 12px;margin:0 0 11px;border-radius:10px;font-size:13px;line-height:1.5}
+  .aai-message.bot{background:#f1e3d1;color:#4d302c;border-bottom-left-radius:2px}
+  .aai-message.user{background:var(--maroon);color:#fff;margin-left:auto;border-bottom-right-radius:2px}
+  .aai-suggestions{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 12px}
+  .aai-suggestions button{border:1px solid #ddc7ad;background:#fffdf8;color:#6c3a2f;border-radius:15px;padding:5px 8px;font:600 11px "DM Sans";cursor:pointer}
+  .aai-confirm{display:flex;gap:8px;margin-top:8px}
+  .aai-confirm button{border:0;border-radius:5px;padding:7px 12px;font-weight:700;cursor:pointer;font-size:12px}
+  .aai-confirm .yes{background:#e9efdf;color:#43602f}
+  .aai-confirm .no{background:#f6dede;color:#a3372a}
+  .aai-goto{display:inline-block;margin-top:6px;background:#fffdf8;color:var(--maroon);text-decoration:none;padding:7px 11px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;border:1px solid #ddc7ad}
+  .aai-form{display:flex;border-top:1px solid #eadaca;padding:9px}
+  .aai-form input{border:0;outline:0;flex:1;font:13px "DM Sans";padding:7px}
+  .aai-form button{border:0;border-radius:5px;background:var(--orange);color:#fff;padding:7px 11px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -150,6 +174,25 @@
             <input type="checkbox" id="cod-toggle" checked style="width:auto;transform:scale(1.3)" />
             Cash on Delivery is <span id="cod-status">enabled</span>
           </label>
+        </div>
+        <div class="card" id="security-card" style="margin-bottom:26px">
+          <h2>Change admin password</h2>
+          <p class="hint">Re-enter your current username and password, then set a new one. This takes effect immediately for future logins — your current session stays signed in.</p>
+          <form class="prod-form" id="password-form" style="max-width:420px">
+            <label for="pw-current-user">Current username</label>
+            <input id="pw-current-user" autocomplete="username" required />
+            <label for="pw-current-pass">Current password</label>
+            <input id="pw-current-pass" type="password" autocomplete="current-password" required />
+            <label for="pw-new-user">New username</label>
+            <input id="pw-new-user" autocomplete="username" required />
+            <label for="pw-new-pass">New password (min. 8 characters)</label>
+            <input id="pw-new-pass" type="password" autocomplete="new-password" minlength="8" required />
+            <label for="pw-new-pass-confirm">Confirm new password</label>
+            <input id="pw-new-pass-confirm" type="password" autocomplete="new-password" minlength="8" required />
+            <button type="submit" id="password-submit">Update password</button>
+            <div class="login-error" id="password-error" style="text-align:left;color:#b44b32;font-size:13px;margin-top:10px"></div>
+            <div id="password-success" style="text-align:left;color:#43602f;font-size:13px;margin-top:10px;font-weight:700"></div>
+          </form>
         </div>
         <div class="two-col">
           <div class="card">
@@ -240,6 +283,21 @@
         </div>
       </section>
     </main>
+
+    <button class="aai-toggle" id="aai-toggle" aria-expanded="false"><span>🕉️</span> Ask Admin AI</button>
+    <aside class="aai-panel" id="aai-panel" aria-label="Admin AI assistant">
+      <div class="aai-head"><div class="aai-avatar">🕉️</div><div><strong>Admin AI</strong><small>Ask about your store, or tell it what to change</small></div></div>
+      <div class="aai-chat" id="aai-chat">
+        <div class="aai-message bot">Radhe Radhe! I know your orders, products, returns and settings, and I can make changes for you — I'll always show you what I'm about to do first for anything sensitive.</div>
+        <div class="aai-suggestions">
+          <button data-aai-question="Sales summary">Sales summary</button>
+          <button data-aai-question="Any out of stock products?">Out of stock?</button>
+          <button data-aai-question="Pending returns">Pending returns</button>
+          <button data-aai-question="Change my password">Change password</button>
+        </div>
+      </div>
+      <form class="aai-form" id="aai-form"><input id="aai-input" placeholder="Ask or tell Admin AI..." autocomplete="off" /><button>Send</button></form>
+    </aside>
   </div>
 
   <script>
@@ -298,6 +356,39 @@
         if (!result.ok) { alert((result.data && result.data.error) || 'Could not save this setting.'); codToggle.checked = !enabled; return; }
         codStatus.textContent = enabled ? 'enabled' : 'disabled';
       }).catch(function () { codToggle.disabled = false; codToggle.checked = !enabled; alert('Could not reach the server.'); });
+    });
+
+    // Self-service password change -- re-verifies the current username +
+    // password server-side (not just the session cookie) before accepting
+    // a new one. New hashes are saved in shared storage; env vars stay as
+    // the fallback if that storage was never written to.
+    var passwordForm = document.getElementById('password-form'), passwordSubmit = document.getElementById('password-submit'),
+      passwordError = document.getElementById('password-error'), passwordSuccess = document.getElementById('password-success');
+    passwordForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      passwordError.textContent = '';
+      passwordSuccess.textContent = '';
+      var newPass = document.getElementById('pw-new-pass').value;
+      var confirmPass = document.getElementById('pw-new-pass-confirm').value;
+      if (newPass !== confirmPass) { passwordError.textContent = 'New password and confirmation do not match.'; return; }
+      passwordSubmit.disabled = true;
+      passwordSubmit.textContent = 'Updating…';
+      api('/api/auth/change-password', {
+        currentUsername: document.getElementById('pw-current-user').value.trim(),
+        currentPassword: document.getElementById('pw-current-pass').value,
+        newUsername: document.getElementById('pw-new-user').value.trim(),
+        newPassword: newPass
+      }).then(function (result) {
+        passwordSubmit.disabled = false;
+        passwordSubmit.textContent = 'Update password';
+        if (!result.ok) { passwordError.textContent = (result.data && result.data.error) || 'Could not update the password.'; return; }
+        passwordSuccess.textContent = 'Password updated. Use your new username and password next time you sign in.';
+        passwordForm.reset();
+      }).catch(function () {
+        passwordSubmit.disabled = false;
+        passwordSubmit.textContent = 'Update password';
+        passwordError.textContent = 'Could not reach the server. Please try again.';
+      });
     });
 
     // If a valid session cookie already exists (e.g. page reloaded), skip straight to the dashboard.
@@ -619,6 +710,270 @@
     });
 
     function renderAll() { renderOrders(); renderProducts(); renderStats(); renderReturns(); }
+
+    // ---------------- Admin AI assistant ----------------
+    // A built-in, rule-based assistant (no external AI service, no API
+    // key, no cost) that reads the same live data already on this page
+    // (orders, products, returns, settings) to answer questions, and can
+    // carry out common admin tasks. Anything sensitive (deleting a
+    // product, changing prices, toggling COD, approving/rejecting a
+    // return, changing the password) is never done immediately -- it's
+    // always shown back to the admin with a Yes/Cancel confirm first.
+    var aaiToggle = document.getElementById('aai-toggle'), aaiPanel = document.getElementById('aai-panel'),
+      aaiForm = document.getElementById('aai-form'), aaiInput = document.getElementById('aai-input'), aaiChat = document.getElementById('aai-chat');
+    var aaiPendingAction = null;
+
+    aaiToggle.addEventListener('click', function () {
+      var open = aaiPanel.classList.toggle('open');
+      aaiToggle.setAttribute('aria-expanded', open);
+      if (open) aaiInput.focus();
+    });
+
+    function aaiAppend(html) {
+      aaiChat.insertAdjacentHTML('beforeend', html);
+      aaiChat.scrollTop = aaiChat.scrollHeight;
+    }
+    function aaiBotText(text) {
+      aaiAppend('<div class="aai-message bot">' + text + '</div>');
+    }
+    function aaiBotConfirm(text, runFn) {
+      aaiPendingAction = runFn;
+      aaiAppend('<div class="aai-message bot">' + text + '<div class="aai-confirm"><button type="button" class="yes">✅ Yes, do it</button><button type="button" class="no">✖️ Cancel</button></div></div>');
+    }
+    function aaiBotGoto(text, label, target) {
+      aaiAppend('<div class="aai-message bot">' + text + '<div><button type="button" class="aai-goto" data-goto="' + target + '">' + label + ' →</button></div></div>');
+    }
+    aaiChat.addEventListener('click', function (event) {
+      var yesBtn = event.target.closest('.aai-confirm .yes');
+      var noBtn = event.target.closest('.aai-confirm .no');
+      var gotoBtn = event.target.closest('.aai-goto');
+      var suggestBtn = event.target.closest('[data-aai-question]');
+      if (yesBtn) {
+        var confirmRow = yesBtn.closest('.aai-confirm');
+        confirmRow.innerHTML = '<span style="font-size:12px;color:#8a6a61">Working…</span>';
+        if (aaiPendingAction) { var run = aaiPendingAction; aaiPendingAction = null; run(); }
+      } else if (noBtn) {
+        noBtn.closest('.aai-confirm').innerHTML = '<span style="font-size:12px;color:#8a6a61">Cancelled.</span>';
+        aaiPendingAction = null;
+      } else if (gotoBtn) {
+        aaiGoTo(gotoBtn.dataset.goto);
+      } else if (suggestBtn) {
+        aaiSend(suggestBtn.dataset.aaiQuestion);
+      }
+    });
+
+    function aaiGoTo(target) {
+      if (target === 'security') {
+        document.querySelector('[data-tab="overview"]').click();
+        setTimeout(function () { document.getElementById('security-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); document.getElementById('pw-current-user').focus(); }, 60);
+      } else if (target === 'add-product') {
+        document.querySelector('[data-tab="products"]').click();
+        setTimeout(function () { prodForm.scrollIntoView({ behavior: 'smooth', block: 'start' }); document.getElementById('p-name').focus(); }, 60);
+      } else if (target === 'returns') {
+        document.querySelector('[data-tab="returns"]').click();
+      } else if (target === 'orders') {
+        document.querySelector('[data-tab="orders"]').click();
+      }
+      aaiPanel.classList.remove('open');
+    }
+
+    function aaiFindProducts(nameQuery) {
+      var q = (nameQuery || '').trim().toLowerCase();
+      if (!q) return [];
+      return Store.getProducts().filter(function (p) { return p.name.toLowerCase().indexOf(q) !== -1; });
+    }
+    function aaiFindOrder(idQuery) {
+      var q = (idQuery || '').trim().toLowerCase();
+      var orders = Store.getOrders();
+      var exact = orders.find(function (o) { return o.id.toLowerCase() === q; });
+      if (exact) return exact;
+      var partial = orders.filter(function (o) { return o.id.toLowerCase().indexOf(q) !== -1; });
+      return partial.length === 1 ? partial[0] : null;
+    }
+    function aaiMatchStatus(text) {
+      var t = (text || '').trim().toLowerCase();
+      return STATUSES.find(function (s) { return s.toLowerCase() === t; }) || null;
+    }
+
+    function aaiRespond(raw) {
+      var msg = raw.trim();
+      var lower = msg.toLowerCase();
+      var m;
+
+      // --- Greetings / help ---
+      if (/^(hi|hello|hey|radhe radhe|help|what can you do)\b/.test(lower)) {
+        aaiBotText('I can tell you about sales, orders, stock, and pending returns, and I can change prices, stock status, order status, Cash on Delivery, approve/reject returns, or point you to change your password — just ask in plain words.');
+        return;
+      }
+
+      // --- Password change (navigate, never act directly on this one) ---
+      if (/(change|reset|update).{0,15}password|forgot.{0,10}password|password.{0,10}(change|reset)/.test(lower)) {
+        aaiBotGoto('For your security, password changes happen on a real form — you\'ll need to re-enter your current username and password there.', 'Go to password settings', 'security');
+        return;
+      }
+
+      // --- Add product (navigate) ---
+      if (/add (a |new )?product|create (a )?product/.test(lower)) {
+        aaiBotGoto('Sure — I\'ll take you to the Add Product form.', 'Go to Add Product', 'add-product');
+        return;
+      }
+
+      // --- Cash on Delivery: toggle (check before status-query so "turn on/off" wins) ---
+      m = lower.match(/turn (on|off) (cash on delivery|cod)|(enable|disable) (cash on delivery|cod)/);
+      if (m) {
+        var codAction = (m[1] || m[3] || '').toLowerCase();
+        var turningOn = codAction === 'on' || codAction === 'enable';
+        if (codToggle.checked === turningOn) {
+          aaiBotText('Cash on Delivery is already ' + (turningOn ? 'enabled' : 'disabled') + '.');
+        } else {
+          aaiBotConfirm('This will turn Cash on Delivery <strong>' + (turningOn ? 'ON' : 'OFF') + '</strong> for the whole store, effective immediately for every customer. Proceed?', function () {
+            codToggle.checked = turningOn;
+            codToggle.dispatchEvent(new Event('change'));
+            aaiBotText('Done — Cash on Delivery is now ' + (turningOn ? 'enabled' : 'disabled') + '.');
+          });
+        }
+        return;
+      }
+      // --- Cash on Delivery: status query ---
+      if (/is cod|cod status|cash on delivery status|is cash on delivery/.test(lower)) {
+        aaiBotText('Cash on Delivery is currently <strong>' + (codToggle.checked ? 'enabled' : 'disabled') + '</strong>.');
+        return;
+      }
+
+      // --- Approve / reject a return ---
+      m = msg.match(/(approve|reject)\s*(?:return\s*)?(RET-[A-Za-z0-9-]+)?/i);
+      if (m && /^(approve|reject) return/i.test(msg.trim())) {
+        var wantStatus = /approve/i.test(m[1]) ? 'Approved' : 'Rejected';
+        var retId = m[2];
+        var target = retId ? returnsCache.find(function (r) { return r.id.toLowerCase() === retId.toLowerCase(); }) : null;
+        if (!target && retId) { aaiBotText('I couldn\'t find a return with id "' + Store.escapeHtml(retId) + '". Check the Returns tab for the exact id.'); return; }
+        if (!target) { aaiBotGoto('Tell me which return to ' + m[1].toLowerCase() + ' by its id (e.g. "approve return RET-ABC123-XYZ0"), or review them here.', 'Go to Returns', 'returns'); return; }
+        aaiBotConfirm('This will mark return <strong>' + Store.escapeHtml(target.id) + '</strong> (order #' + Store.escapeHtml(target.orderId) + ', ' + Store.escapeHtml(target.name) + ') as <strong>' + wantStatus + '</strong>, and the customer will see this the next time they check their account. Proceed?', function () {
+          api('/api/returns/update', { id: target.id, status: wantStatus, adminNote: '' }).then(function (result) {
+            if (!result.ok) { aaiBotText('Could not update this request: ' + Store.escapeHtml((result.data && result.data.error) || 'unknown error') + '.'); return; }
+            renderReturns();
+            aaiBotText('Done — ' + Store.escapeHtml(target.id) + ' is now ' + wantStatus + '.');
+          }).catch(function () { aaiBotText('Could not reach the server.'); });
+        });
+        return;
+      }
+      // --- Pending returns query ---
+      if (/pending return|return request/.test(lower)) {
+        var pending = returnsCache.filter(function (r) { return r.status === 'Pending'; });
+        if (!pending.length) { aaiBotText('No pending return requests right now.'); return; }
+        aaiBotText('You have <strong>' + pending.length + '</strong> pending return' + (pending.length === 1 ? '' : 's') + ':<br>' +
+          pending.slice(0, 6).map(function (r) { return '• ' + Store.escapeHtml(r.id) + ' — ' + Store.escapeHtml(r.name) + ' (order #' + Store.escapeHtml(r.orderId) + ')'; }).join('<br>'));
+        return;
+      }
+
+      // --- Order status: change ---
+      m = msg.match(/(?:change |set )?order\s+(\S+)\s+status\s+to\s+([a-z ]+)/i);
+      if (m) {
+        var order = aaiFindOrder(m[1]);
+        var newStatus = aaiMatchStatus(m[2]);
+        if (!order) { aaiBotText('I couldn\'t find an order matching "' + Store.escapeHtml(m[1]) + '".'); return; }
+        if (!newStatus) { aaiBotText('That\'s not a status I recognise. Valid statuses: ' + STATUSES.join(', ') + '.'); return; }
+        aaiBotConfirm('This will change order <strong>#' + Store.escapeHtml(order.id) + '</strong> from ' + Store.escapeHtml(order.status) + ' to <strong>' + newStatus + '</strong>. Proceed?', function () {
+          Store.updateOrderStatus(order.id, newStatus);
+          renderOrders(); renderStats();
+          aaiBotText('Done — order #' + Store.escapeHtml(order.id) + ' is now ' + newStatus + '.');
+        });
+        return;
+      }
+      // --- Order status: lookup ---
+      m = msg.match(/status of order\s+(\S+)|where is order\s+(\S+)/i);
+      if (m) {
+        var lookupOrder = aaiFindOrder(m[1] || m[2]);
+        if (!lookupOrder) { aaiBotText('I couldn\'t find that order. Check the Orders tab for the exact id.'); return; }
+        aaiBotText('Order #' + Store.escapeHtml(lookupOrder.id) + ' is currently <strong>' + Store.escapeHtml(lookupOrder.status) + '</strong> (' + Store.escapeHtml(lookupOrder.paymentMethod) + ', ' + Store.formatMoney(lookupOrder.total) + ').');
+        return;
+      }
+
+      // --- Product price: change ---
+      m = msg.match(/(?:change|set)\s+(?:the\s+)?price\s+of\s+(.+?)\s+to\s+₹?\s*(\d+)/i);
+      if (m) {
+        var priceMatches = aaiFindProducts(m[1]);
+        var newPrice = Number(m[2]);
+        if (!priceMatches.length) { aaiBotText('I couldn\'t find a product matching "' + Store.escapeHtml(m[1]) + '".'); return; }
+        if (priceMatches.length > 1) { aaiBotText('That matches more than one product: ' + priceMatches.map(function (p) { return Store.escapeHtml(p.name); }).join(', ') + '. Please be more specific.'); return; }
+        var priceProduct = priceMatches[0];
+        aaiBotConfirm('This will change <strong>' + Store.escapeHtml(priceProduct.name) + '</strong>\'s price from ' + Store.formatMoney(priceProduct.price) + ' to <strong>' + Store.formatMoney(newPrice) + '</strong>, live on the site immediately. Proceed?', function () {
+          Store.updateProduct(priceProduct.id, { price: newPrice });
+          renderProducts(); renderStats();
+          aaiBotText('Done — ' + Store.escapeHtml(priceProduct.name) + ' is now ' + Store.formatMoney(newPrice) + '.');
+        });
+        return;
+      }
+
+      // --- Product stock: mark in/out of stock ---
+      m = msg.match(/mark\s+(.+?)\s+(out of stock|in stock)/i);
+      if (m) {
+        var stockMatches = aaiFindProducts(m[1]);
+        var wantInStock = /^in stock$/i.test(m[2]);
+        if (!stockMatches.length) { aaiBotText('I couldn\'t find a product matching "' + Store.escapeHtml(m[1]) + '".'); return; }
+        if (stockMatches.length > 1) { aaiBotText('That matches more than one product: ' + stockMatches.map(function (p) { return Store.escapeHtml(p.name); }).join(', ') + '. Please be more specific.'); return; }
+        var stockProduct = stockMatches[0];
+        aaiBotConfirm('This will mark <strong>' + Store.escapeHtml(stockProduct.name) + '</strong> as <strong>' + (wantInStock ? 'in stock' : 'out of stock') + '</strong>. Proceed?', function () {
+          Store.updateProduct(stockProduct.id, { inStock: wantInStock });
+          renderProducts();
+          aaiBotText('Done — ' + Store.escapeHtml(stockProduct.name) + ' is now ' + (wantInStock ? 'in stock' : 'out of stock') + '.');
+        });
+        return;
+      }
+
+      // --- Product: delete ---
+      m = msg.match(/delete\s+product\s+(.+)|remove\s+product\s+(.+)/i);
+      if (m) {
+        var delMatches = aaiFindProducts(m[1] || m[2]);
+        if (!delMatches.length) { aaiBotText('I couldn\'t find a product matching that name.'); return; }
+        if (delMatches.length > 1) { aaiBotText('That matches more than one product: ' + delMatches.map(function (p) { return Store.escapeHtml(p.name); }).join(', ') + '. Please be more specific.'); return; }
+        var delProduct = delMatches[0];
+        aaiBotConfirm('⚠️ This will <strong>permanently delete</strong> "' + Store.escapeHtml(delProduct.name) + '" — this cannot be undone. Proceed?', function () {
+          Store.deleteProduct(delProduct.id);
+          renderProducts(); renderStats();
+          aaiBotText('Done — "' + Store.escapeHtml(delProduct.name) + '" has been deleted.');
+        });
+        return;
+      }
+
+      // --- Out of stock query ---
+      if (/out of stock|low stock/.test(lower)) {
+        var oos = Store.getProducts().filter(function (p) { return p.inStock === false; });
+        if (!oos.length) { aaiBotText('Nothing is marked out of stock right now.'); return; }
+        aaiBotText('<strong>' + oos.length + '</strong> product' + (oos.length === 1 ? ' is' : 's are') + ' out of stock:<br>' + oos.slice(0, 8).map(function (p) { return '• ' + Store.escapeHtml(p.name); }).join('<br>'));
+        return;
+      }
+
+      // --- Product price: lookup ---
+      m = msg.match(/price of\s+(.+)/i);
+      if (m) {
+        var lookupMatches = aaiFindProducts(m[1]);
+        if (!lookupMatches.length) { aaiBotText('I couldn\'t find a product matching "' + Store.escapeHtml(m[1]) + '".'); return; }
+        aaiBotText(lookupMatches.slice(0, 6).map(function (p) { return Store.escapeHtml(p.name) + ': <strong>' + Store.formatMoney(p.price) + '</strong>'; }).join('<br>'));
+        return;
+      }
+
+      // --- Sales / revenue / order-count / product-count summary ---
+      if (/sales summary|revenue|how much.*(earn|sale)|total sales/.test(lower)) {
+        aaiBotText('💰 Total revenue: <strong>' + document.getElementById('stat-revenue').textContent + '</strong><br>📦 Total orders: <strong>' + document.getElementById('stat-orders').textContent + '</strong><br>🚚 Pending COD orders: <strong>' + document.getElementById('stat-cod').textContent + '</strong><br>🛍️ Products listed: <strong>' + document.getElementById('stat-products').textContent + '</strong>');
+        return;
+      }
+      if (/how many orders|total orders|order count/.test(lower)) { aaiBotText('You have <strong>' + document.getElementById('stat-orders').textContent + '</strong> total orders.'); return; }
+      if (/pending cod|cod pending/.test(lower)) { aaiBotText('<strong>' + document.getElementById('stat-cod').textContent + '</strong> Cash on Delivery orders are still pending.'); return; }
+      if (/how many products|product count|total products/.test(lower)) { aaiBotText('You have <strong>' + document.getElementById('stat-products').textContent + '</strong> products listed.'); return; }
+
+      // --- Fallback ---
+      aaiBotText('I\'m not quite sure what you mean. Try things like: "sales summary", "out of stock?", "price of Silver Mukut", "change price of Silver Mukut to 350", "approve return RET-...", "turn off cod", or "change my password".');
+    }
+
+    function aaiSend(message) {
+      if (!message) return;
+      var safe = Store.escapeHtml(message);
+      aaiAppend('<div class="aai-message user">' + safe + '</div>');
+      aaiInput.value = '';
+      aaiRespond(message);
+    }
+    aaiForm.addEventListener('submit', function (event) { event.preventDefault(); aaiSend(aaiInput.value.trim()); });
   </script>
 </body>
 </html>
