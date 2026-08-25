@@ -157,6 +157,7 @@
       <button class="tab-btn" data-tab="orders">Orders</button>
       <button class="tab-btn" data-tab="returns">Returns<span id="returns-badge" hidden></span></button>
       <button class="tab-btn active" data-tab="products">Products</button>
+      <button class="tab-btn" data-tab="trending">Trending Slider</button>
     </nav>
 
     <main class="wrap">
@@ -291,6 +292,31 @@
           </div>
         </div>
       </section>
+
+      <section id="tab-trending" hidden>
+        <div class="card" style="margin-bottom:22px">
+          <h2>Slide timing</h2>
+          <p class="hint">How long each product stays on screen before sliding to the next one, on the homepage.</p>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <input type="number" id="trending-interval" min="2" max="30" style="width:90px;border:1px solid #dfcdb8;border-radius:5px;padding:10px;font:14px 'DM Sans'" />
+            <span>seconds</span>
+            <button type="button" id="trending-interval-save" style="border:0;border-radius:5px;background:var(--maroon);color:#fff;padding:10px 16px;font-weight:700;cursor:pointer">Save timing</button>
+            <span id="trending-interval-status" style="font-size:12px;color:#8a6a61"></span>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <h2>Choose products</h2>
+            <p class="hint">Tick the products you want moving in the homepage slider.</p>
+            <div id="trending-picker" style="max-height:440px;overflow:auto"></div>
+          </div>
+          <div class="card">
+            <h2>Slide order (<span id="trending-selected-count">0</span> selected)</h2>
+            <p class="hint">This is the order they'll appear in on the homepage. Use the arrows to reorder.</p>
+            <div id="trending-order-list"></div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <button class="aai-toggle" id="aai-toggle" aria-expanded="false"><span>🕉️</span> Ask Admin AI</button>
@@ -348,6 +374,7 @@
       // build on top of) the latest version, not a stale local copy.
       Store.pullProductsFromServer().finally(function () {
         renderAll();
+        loadTrendingSettings();
       });
       loadCodSetting();
     }
@@ -446,7 +473,7 @@
       btn.addEventListener('click', function () {
         document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
-        ['overview', 'orders', 'returns', 'products'].forEach(function (name) {
+        ['overview', 'orders', 'returns', 'products', 'trending'].forEach(function (name) {
           document.getElementById('tab-' + name).hidden = name !== btn.dataset.tab;
         });
       });
@@ -773,6 +800,90 @@
     });
 
     function renderAll() { renderOrders(); renderProducts(); renderStats(); renderReturns(); }
+
+    // ---------------- Trending Slider ----------------
+    // Which products auto-slide on the homepage, and how fast -- lives in
+    // the same shared settings store as Cash on Delivery, so every
+    // customer's device sees the same picks and timing immediately.
+    var trendingIds = [];
+    function loadTrendingSettings() {
+      fetch('/api/settings/get').then(function (r) { return r.json(); }).then(function (data) {
+        var s = (data && data.settings) || {};
+        trendingIds = Array.isArray(s.trendingSlideIds) ? s.trendingSlideIds.slice() : [];
+        document.getElementById('trending-interval').value = s.trendingSlideInterval || 5;
+        renderTrendingPicker();
+        renderTrendingOrder();
+      }).catch(function () { /* leave the tab empty; retry on next dashboard load */ });
+    }
+    function renderTrendingPicker() {
+      var products = Store.getProducts();
+      var container = document.getElementById('trending-picker');
+      if (!container) return;
+      container.innerHTML = products.length ? products.map(function (p) {
+        var checked = trendingIds.indexOf(p.id) !== -1;
+        var thumb = p.image ? '<img src="' + p.image + '" style="width:26px;height:26px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:6px">' : (p.icon || '🛍️') + ' ';
+        return '<label style="display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid #eee0cf;font-size:13.5px;cursor:pointer">' +
+          '<input type="checkbox" data-trend-id="' + p.id + '" ' + (checked ? 'checked' : '') + ' style="width:auto" />' +
+          thumb + Store.escapeHtml(p.name) + '<span style="color:#8a6a61;margin-left:auto">' + Store.formatMoney(p.price) + '</span></label>';
+      }).join('') : '<div class="empty-note">No products yet — add some in the Products tab first.</div>';
+    }
+    function renderTrendingOrder() {
+      var countEl = document.getElementById('trending-selected-count');
+      if (countEl) countEl.textContent = trendingIds.length;
+      var listEl = document.getElementById('trending-order-list');
+      if (!listEl) return;
+      if (!trendingIds.length) { listEl.innerHTML = '<div class="empty-note">No products selected yet.</div>'; return; }
+      listEl.innerHTML = trendingIds.map(function (id, i) {
+        var p = Store.getProductById(id);
+        if (!p) return '';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid #eee0cf;font-size:13.5px">' +
+          '<span style="color:#8a6a61;width:16px">' + (i + 1) + '</span>' +
+          '<span style="flex:1">' + Store.escapeHtml(p.name) + '</span>' +
+          '<button type="button" data-move="up" data-id="' + id + '"' + (i === 0 ? ' disabled' : '') + ' style="border:0;background:#f6e6da;color:#a34b2a;padding:4px 9px;border-radius:4px;cursor:pointer">↑</button>' +
+          '<button type="button" data-move="down" data-id="' + id + '"' + (i === trendingIds.length - 1 ? ' disabled' : '') + ' style="border:0;background:#f6e6da;color:#a34b2a;padding:4px 9px;border-radius:4px;cursor:pointer">↓</button>' +
+          '</div>';
+      }).join('');
+    }
+    function saveTrendingIds() {
+      api('/api/settings/update', { trendingSlideIds: trendingIds }).then(function (result) {
+        if (!result.ok) alert((result.data && result.data.error) || 'Could not save the slider selection.');
+      }).catch(function () { alert('Could not reach the server.'); });
+    }
+    var trendingPickerEl = document.getElementById('trending-picker');
+    if (trendingPickerEl) trendingPickerEl.addEventListener('change', function (event) {
+      var cb = event.target.closest('[data-trend-id]');
+      if (!cb) return;
+      var id = cb.dataset.trendId;
+      if (cb.checked) { if (trendingIds.indexOf(id) === -1) trendingIds.push(id); }
+      else { trendingIds = trendingIds.filter(function (x) { return x !== id; }); }
+      renderTrendingOrder();
+      saveTrendingIds();
+    });
+    var trendingOrderEl = document.getElementById('trending-order-list');
+    if (trendingOrderEl) trendingOrderEl.addEventListener('click', function (event) {
+      var btn = event.target.closest('[data-move]');
+      if (!btn) return;
+      var id = btn.dataset.id, dir = btn.dataset.move;
+      var idx = trendingIds.indexOf(id);
+      if (idx === -1) return;
+      var swapWith = dir === 'up' ? idx - 1 : idx + 1;
+      if (swapWith < 0 || swapWith >= trendingIds.length) return;
+      var tmp = trendingIds[idx]; trendingIds[idx] = trendingIds[swapWith]; trendingIds[swapWith] = tmp;
+      renderTrendingOrder();
+      saveTrendingIds();
+    });
+    var trendingIntervalSaveBtn = document.getElementById('trending-interval-save');
+    if (trendingIntervalSaveBtn) trendingIntervalSaveBtn.addEventListener('click', function () {
+      var seconds = Number(document.getElementById('trending-interval').value);
+      var statusEl = document.getElementById('trending-interval-status');
+      statusEl.textContent = 'Saving…';
+      api('/api/settings/update', { trendingSlideInterval: seconds }).then(function (result) {
+        if (!result.ok) { statusEl.textContent = ''; alert((result.data && result.data.error) || 'Could not save the timing.'); return; }
+        document.getElementById('trending-interval').value = result.data.settings.trendingSlideInterval;
+        statusEl.textContent = 'Saved ✓';
+        setTimeout(function () { statusEl.textContent = ''; }, 2000);
+      }).catch(function () { statusEl.textContent = ''; alert('Could not reach the server.'); });
+    });
 
     // ---------------- Admin AI assistant ----------------
     // A built-in, rule-based assistant (no external AI service, no API
