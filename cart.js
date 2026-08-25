@@ -335,7 +335,9 @@
       '#lg-cart-toggle span{display:inline-block;margin-left:6px;background:#fff;color:#a54a2b;border-radius:12px;padding:2px 7px;font-size:11px}' +
       '#lg-cart-drawer{display:none;position:fixed;right:18px;bottom:82px;width:min(390px,calc(100vw - 36px));max-height:calc(100vh - 112px);overflow:auto;background:#fffdf8;z-index:41;border:1px solid #e6d2bb;border-radius:10px;box-shadow:0 15px 45px #2e1b1740;padding:18px;font-family:"DM Sans",sans-serif;color:#36201e}' +
       '#lg-cart-drawer.open{display:block}' +
-      '#lg-cart-drawer h2{font:700 26px "Playfair Display",serif;margin:0 0 15px}' +
+      '.lg-cart-head{display:flex;align-items:center;gap:10px;margin:0 0 15px}' +
+      '#lg-cart-back{border:1px solid #dfc8af;background:#fffdf8;color:#542d27;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;flex-shrink:0;line-height:1}' +
+      '#lg-cart-drawer h2{font:700 26px "Playfair Display",serif;margin:0}' +
       '.lg-cart-item{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid #eedfce;font-size:14px}' +
       '.lg-cart-item strong{display:block;font-family:"Playfair Display",serif;font-weight:600}' +
       '.lg-cart-qty{display:flex;align-items:center;gap:8px;margin-top:6px}' +
@@ -350,10 +352,18 @@
 
     drawerEl = document.createElement('aside');
     drawerEl.id = 'lg-cart-drawer';
-    drawerEl.innerHTML = '<h2>Your cart</h2><div id="lg-cart-items"></div>' +
+    drawerEl.innerHTML = '<div class="lg-cart-head"><button id="lg-cart-back" aria-label="Close cart" title="Close cart">←</button><h2>Your cart</h2></div><div id="lg-cart-items"></div>' +
       '<div class="lg-cart-total"><span>Total</span><span id="lg-cart-total">₹0</span></div>' +
       '<a class="lg-checkout-btn" id="lg-cart-checkout" href="checkout.html">Proceed to checkout</a>';
     document.body.appendChild(drawerEl);
+
+    // The cart only closes when the customer explicitly presses this back
+    // arrow -- not on an outside click, and not while they're mid-edit
+    // (changing quantities used to close the drawer by accident because a
+    // full re-render swapped out the button they'd just clicked).
+    document.getElementById('lg-cart-back').addEventListener('click', function () {
+      drawerEl.classList.remove('open');
+    });
 
     var toggle = document.createElement('button');
     toggle.id = 'lg-cart-toggle';
@@ -378,13 +388,6 @@
       if (button.getAttribute('data-lg') === 'plus') setQty(name, item.qty + 1);
       else if (button.getAttribute('data-lg') === 'minus') setQty(name, item.qty - 1);
       else if (button.getAttribute('data-lg') === 'remove') removeFromCart(name);
-    });
-
-    document.addEventListener('click', function (event) {
-      if (!drawerEl) return;
-      if (drawerEl.classList.contains('open') && !drawerEl.contains(event.target) && event.target.id !== 'lg-cart-toggle') {
-        drawerEl.classList.remove('open');
-      }
     });
 
     renderDrawer();
