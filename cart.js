@@ -347,7 +347,14 @@
       '.lg-cart-total{display:flex;justify-content:space-between;border-top:1px solid #dfc8af;margin-top:7px;padding-top:14px;font-weight:700}' +
       '.lg-empty-cart{text-align:center;color:#785850;padding:20px 0;font-size:14px}' +
       '.lg-checkout-btn{width:100%;border:0;background:#542d27;color:#fff;border-radius:4px;padding:12px 13px;font-weight:700;cursor:pointer;margin-top:14px;font-size:14px;text-decoration:none;display:block;text-align:center;box-sizing:border-box}' +
-      '.lg-checkout-btn.disabled{opacity:.5;pointer-events:none}';
+      '.lg-checkout-btn.disabled{opacity:.5;pointer-events:none}' +
+      '#lg-menu-toggle{position:fixed;top:14px;right:14px;z-index:50;border:0;border-radius:50%;width:42px;height:42px;background:#542d27;color:#fff8ec;font-size:19px;cursor:pointer;box-shadow:0 6px 16px #2e1b1750;line-height:1}' +
+      '#lg-menu-panel{display:none;position:fixed;top:62px;right:14px;z-index:50;width:min(260px,calc(100vw - 28px));max-height:calc(100vh - 76px);overflow:auto;background:#fffdf8;border:1px solid #e6d2bb;border-radius:10px;box-shadow:0 15px 40px #2e1b1745;padding:8px;font-family:"DM Sans",sans-serif}' +
+      '@media(max-width:520px){#lg-menu-toggle{top:64px}#lg-menu-panel{top:112px}}' +
+      '#lg-menu-panel.open{display:block}' +
+      '.lg-menu-link{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;text-align:left;border:0;background:none;color:#3a2422;text-decoration:none;padding:11px 10px;font:600 13.5px "DM Sans",sans-serif;cursor:pointer;border-radius:6px}' +
+      '.lg-menu-link:hover{background:#f7ebda}' +
+      '.lg-menu-divider{border:0;border-top:1px solid #eee0cf;margin:6px 4px}';
     document.head.appendChild(style);
 
     drawerEl = document.createElement('aside');
@@ -399,6 +406,53 @@
     renderDrawer();
   }
 
+  /* ---------------- Quick-access menu (☰ top-right, on every page) ---------------- */
+
+  function ensureMenu() {
+    if (window.LG_NO_CART_UI) return;
+    if (document.getElementById('lg-menu-toggle')) return;
+
+    var toggle = document.createElement('button');
+    toggle.id = 'lg-menu-toggle';
+    toggle.innerHTML = '☰';
+    toggle.setAttribute('aria-label', 'Open menu');
+    document.body.appendChild(toggle);
+
+    var panel = document.createElement('div');
+    panel.id = 'lg-menu-panel';
+    panel.innerHTML =
+      '<a class="lg-menu-link" href="index.html">🏠 Home</a>' +
+      '<a class="lg-menu-link" href="index.html#collections">🛍️ All collections</a>' +
+      '<a class="lg-menu-link" href="product.html?id=laddu-gopal-ji">🪷 Laddu Gopal ji</a>' +
+      '<a class="lg-menu-link" href="index.html#bestsellers">⭐ Best sellers</a>' +
+      '<a class="lg-menu-link" href="index.html#about">📖 Our story</a>' +
+      '<a class="lg-menu-link" href="index.html#contact">📞 Contact</a>' +
+      '<hr class="lg-menu-divider" />' +
+      '<a class="lg-menu-link" href="account.html">👤 My account</a>' +
+      '<a class="lg-menu-link" href="account.html">🧾 My orders</a>' +
+      '<a class="lg-menu-link" href="account.html">❤️ Wishlist</a>' +
+      '<button class="lg-menu-link" type="button" id="lg-menu-cart">🛒 View cart</button>' +
+      '<hr class="lg-menu-divider" />' +
+      '<a class="lg-menu-link" href="privacy-policy.html">Privacy policy</a>' +
+      '<a class="lg-menu-link" href="terms.html">Terms of service</a>' +
+      '<a class="lg-menu-link" href="refund-policy.html">Replacement policy</a>';
+    document.body.appendChild(panel);
+
+    toggle.addEventListener('click', function (event) {
+      event.stopPropagation();
+      panel.classList.toggle('open');
+    });
+    document.getElementById('lg-menu-cart').addEventListener('click', function () {
+      panel.classList.remove('open');
+      openDrawer_();
+    });
+    document.addEventListener('click', function (event) {
+      if (panel.classList.contains('open') && !panel.contains(event.target) && event.target !== toggle) {
+        panel.classList.remove('open');
+      }
+    });
+  }
+
   function renderDrawer() {
     if (!itemsEl) return;
     var totals = getTotals();
@@ -424,8 +478,9 @@
     });
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureDrawer);
-  else ensureDrawer();
+  function ensureUi() { ensureDrawer(); ensureMenu(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureUi);
+  else ensureUi();
 
   window.LittleGopalStore = {
     CART_KEY: CART_KEY, CUSTOMER_KEY: CUSTOMER_KEY, ORDERS_KEY: ORDERS_KEY, PRODUCTS_KEY: PRODUCTS_KEY, COUPONS: COUPONS,
