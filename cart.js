@@ -315,11 +315,25 @@
   }
   function updateOrderStatus(id, status) {
     var orders = getOrders();
-    orders.forEach(function (o) { if (o.id === id) o.status = status; });
+    orders.forEach(function (o) {
+      if (o.id !== id) return;
+      o.status = status;
+      // Record when key milestones actually happened, not just the current
+      // status -- lets the admin see a real delivered/cancelled date, not
+      // just "Delivered" with no timestamp.
+      if (status === 'Delivered' && !o.deliveredAt) o.deliveredAt = new Date().toISOString();
+      if (status === 'Cancelled' && !o.cancelledAt) o.cancelledAt = new Date().toISOString();
+    });
     localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
   }
+  // Each order gets its own unique id: a base-36 millisecond timestamp
+  // (already effectively unique on its own) plus 4 random base-36
+  // characters, so two different customers -- or the same customer
+  // ordering twice -- never end up with the same order id.
   function makeOrderId() {
-    return 'LG' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 90 + 10);
+    var ts = Date.now().toString(36).toUpperCase();
+    var rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+    return 'LG-' + ts + '-' + rand;
   }
 
   /* ---------------- Floating cart button + drawer (injected on every page) ---------------- */

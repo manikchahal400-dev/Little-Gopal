@@ -208,6 +208,15 @@
       </section>
 
       <section id="tab-orders" hidden>
+        <div class="card" style="margin-bottom:22px">
+          <h2>Find an order</h2>
+          <p class="hint">Search by order ID (full or partial) to see every detail — order date, delivery date, payment amount and more.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <input id="order-search-input" placeholder="e.g. LG-XYZ123-AB12" style="flex:1;min-width:200px;border:1px solid #dfcdb8;border-radius:5px;padding:11px;font:14px 'DM Sans'" />
+            <button type="button" id="order-search-btn" style="border:0;border-radius:5px;background:var(--maroon);color:#fff;padding:11px 18px;font-weight:700;cursor:pointer">Search</button>
+          </div>
+          <div id="order-search-result" style="margin-top:16px"></div>
+        </div>
         <div class="card">
           <h2>All orders</h2>
           <p class="hint">Update an order's status as it moves through packing and delivery.</p>
@@ -468,6 +477,43 @@
       var recentEl = document.getElementById('recent-orders');
       recentEl.innerHTML = orders.length ? orders.slice(0, 5).map(function (o) { return orderCardHtml(o, true); }).join('') : '<div class="empty-note">No orders have been placed yet.</div>';
     }
+
+    // Search result: a fuller, always-expanded view of one order (order
+    // date, delivered/cancelled date, payment amount and ref, full address)
+    // -- distinct from the compact collapsible cards in the main list.
+    function orderDetailHtml(order) {
+      var badgeClass = order.paymentStatus === 'Paid' ? 'pay-badge' : 'pay-badge cod';
+      var itemsHtml = order.items.map(function (item) {
+        return '<div><span>' + Store.escapeHtml(item.image) + ' ' + Store.escapeHtml(item.name) + ' × ' + item.qty + '</span><span>' + Store.formatMoney(item.price * item.qty) + '</span></div>';
+      }).join('');
+      var addr = order.customer;
+      var deliveredLine = '<p><strong>Delivered on:</strong> ' + (order.deliveredAt ? new Date(order.deliveredAt).toLocaleString('en-IN') : 'Not yet delivered') + '</p>';
+      var cancelledLine = order.cancelledAt ? '<p><strong>Cancelled on:</strong> ' + new Date(order.cancelledAt).toLocaleString('en-IN') + '</p>' : '';
+      return '<div class="order-card" style="border-top:0;padding-top:0">' +
+        '<div class="order-head" style="cursor:default"><div><strong>Order #' + Store.escapeHtml(order.id) + '</strong>' +
+        '<div class="meta">Placed ' + new Date(order.date).toLocaleString('en-IN') + ' · ' + Store.escapeHtml(order.customer.name) + '</div></div>' +
+        '<div class="order-right"><span class="' + badgeClass + '">' + Store.escapeHtml(order.paymentMethod) + '</span><span class="order-total">' + Store.formatMoney(order.total) + '</span><span class="pay-badge">' + Store.escapeHtml(order.status) + '</span></div></div>' +
+        '<div class="order-body"><div class="items"><h4>Items</h4>' + itemsHtml + '</div>' +
+        '<div class="address"><h4>Delivery to</h4><p><strong>' + Store.escapeHtml(addr.name) + '</strong></p><p>' + Store.escapeHtml(addr.address) + '</p><p>' + Store.escapeHtml(addr.city) + ', ' + Store.escapeHtml(addr.state) + ' — ' + Store.escapeHtml(addr.pincode) + '</p><p>' + Store.escapeHtml(addr.phone) + ' · ' + Store.escapeHtml(addr.email) + '</p>' +
+        '<h4 style="margin-top:12px">Payment</h4><p>' + Store.escapeHtml(order.paymentMethod) + ' — ' + Store.escapeHtml(order.paymentStatus) + (order.paymentRef ? ' · Ref: ' + Store.escapeHtml(order.paymentRef) : '') + '</p><p><strong>Amount:</strong> ' + Store.formatMoney(order.total) + '</p>' +
+        '<h4 style="margin-top:12px">Timeline</h4><p><strong>Order placed:</strong> ' + new Date(order.date).toLocaleString('en-IN') + '</p>' + deliveredLine + cancelledLine +
+        '</div></div></div>';
+    }
+
+    var orderSearchInput = document.getElementById('order-search-input'), orderSearchResult = document.getElementById('order-search-result');
+    function runOrderSearch() {
+      var q = orderSearchInput.value.trim().toLowerCase();
+      if (!q) { orderSearchResult.innerHTML = ''; return; }
+      var orders = Store.getOrders();
+      var exact = orders.find(function (o) { return o.id.toLowerCase() === q; });
+      var matches = exact ? [exact] : orders.filter(function (o) { return o.id.toLowerCase().indexOf(q) !== -1; });
+      if (!matches.length) { orderSearchResult.innerHTML = '<div class="empty-note">No order found matching "' + Store.escapeHtml(orderSearchInput.value.trim()) + '".</div>'; return; }
+      if (matches.length > 6) { orderSearchResult.innerHTML = '<div class="empty-note">' + matches.length + ' orders match — type more of the order ID to narrow it down.</div>'; return; }
+      orderSearchResult.innerHTML = matches.map(orderDetailHtml).join('<hr style="margin:18px 0;border:0;border-top:1px solid #eee0cf">');
+    }
+    document.getElementById('order-search-btn').addEventListener('click', runOrderSearch);
+    orderSearchInput.addEventListener('keydown', function (event) { if (event.key === 'Enter') { event.preventDefault(); runOrderSearch(); } });
+    orderSearchInput.addEventListener('input', function () { if (!orderSearchInput.value.trim()) orderSearchResult.innerHTML = ''; });
 
     document.getElementById('orders-list').addEventListener('change', function (event) {
       var select = event.target.closest('.status-select');
@@ -885,7 +931,7 @@
       if (m) {
         var lookupOrder = aaiFindOrder(m[1] || m[2]);
         if (!lookupOrder) { aaiBotText('I couldn\'t find that order. Check the Orders tab for the exact id.'); return; }
-        aaiBotText('Order #' + Store.escapeHtml(lookupOrder.id) + ' is currently <strong>' + Store.escapeHtml(lookupOrder.status) + '</strong> (' + Store.escapeHtml(lookupOrder.paymentMethod) + ', ' + Store.formatMoney(lookupOrder.total) + ').');
+        aaiBotText('Order #' + Store.escapeHtml(lookupOrder.id) + ' is currently <strong>' + Store.escapeHtml(lookupOrder.status) + '</strong> (' + Store.escapeHtml(lookupOrder.paymentMethod) + ', ' + Store.formatMoney(lookupOrder.total) + ')' + (lookupOrder.deliveredAt ? ', delivered on ' + new Date(lookupOrder.deliveredAt).toLocaleDateString('en-IN') : '') + '.');
         return;
       }
 
