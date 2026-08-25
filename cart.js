@@ -193,6 +193,25 @@
     saveProducts(list);
   }
   function deleteProduct(id) { saveProducts(getProducts().filter(function (p) { return p.id !== id; })); }
+
+  // --- Shared catalog sync (server is the source of truth once seeded) ---
+  // Every storefront page pulls the latest catalog on load so admin's
+  // product changes actually reach real customers, not just the admin's
+  // own browser. admin.html pushes the full catalog after every edit, and
+  // always pulls first before editing so two admin devices don't clobber
+  // each other's changes.
+  function pullProductsFromServer() {
+    return fetch('/api/products/get').then(function (r) { return r.json(); }).then(function (data) {
+      if (data && data.ok && Array.isArray(data.products)) { saveProducts(data.products); return true; }
+      return false;
+    }).catch(function () { return false; });
+  }
+  function pushProductsToServer() {
+    return fetch('/api/products/update', {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ products: getProducts() })
+    }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); });
+  }
   function getProductsByCategory(category) { return getProducts().filter(function (p) { return p.category === category; }); }
   function getFeaturedProducts() { return getProducts().filter(function (p) { return p.featured; }); }
   function getProductById(id) {
@@ -506,6 +525,7 @@
     getReturnRequestForOrder: getReturnRequestForOrder, saveReturnRequestForOrder: saveReturnRequestForOrder,
     getOrders: getOrders, placeOrder: placeOrder, getOrder: getOrder, updateOrderStatus: updateOrderStatus, makeOrderId: makeOrderId,
     getProducts: getProducts, addProduct: addProduct, updateProduct: updateProduct, deleteProduct: deleteProduct,
+    pullProductsFromServer: pullProductsFromServer, pushProductsToServer: pushProductsToServer,
     getProductsByCategory: getProductsByCategory, getFeaturedProducts: getFeaturedProducts,
     getProductById: getProductById, getProductByName: getProductByName, searchProducts: searchProducts,
     getWishlist: getWishlist, isWishlisted: isWishlisted, toggleWishlist: toggleWishlist,

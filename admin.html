@@ -343,7 +343,12 @@
     function showDashboard() {
       loginScreen.hidden = true;
       dashboard.hidden = false;
-      renderAll();
+      // Pull the shared catalog first -- it's the source of truth once any
+      // admin device has ever saved to it, so this always shows (and edits
+      // build on top of) the latest version, not a stale local copy.
+      Store.pullProductsFromServer().finally(function () {
+        renderAll();
+      });
       loadCodSetting();
     }
 
@@ -601,6 +606,16 @@
     });
 
     // Products — reads and writes the same catalog the storefront renders from.
+    // Every mutation below pushes the full updated catalog to shared
+    // storage so it actually reaches real customers, not just this browser.
+    function pushCatalog() {
+      Store.pushProductsToServer().then(function (result) {
+        if (!result.ok) alert('Saved here, but could not sync to customers: ' + ((result.data && result.data.error) || 'unknown error') + '. Try again, or check your connection.');
+      }).catch(function () {
+        alert('Saved here, but could not reach the server to sync this change to customers. Please try again.');
+      });
+    }
+
     var categorySelect = document.getElementById('p-category');
     categorySelect.innerHTML = Object.keys(Store.CATEGORIES).map(function (key) {
       return '<option value="' + key + '">' + Store.CATEGORIES[key] + '</option>';
@@ -670,7 +685,7 @@
       input.focus(); input.select();
       function save() {
         var newPrice = Number(input.value);
-        if (newPrice >= 0) { Store.updateProduct(id, { price: newPrice }); renderStats(); }
+        if (newPrice >= 0) { Store.updateProduct(id, { price: newPrice }); renderStats(); pushCatalog(); }
         renderProducts();
       }
       input.addEventListener('blur', save);
@@ -720,6 +735,7 @@
       resetForm();
       renderProducts();
       renderStats();
+      pushCatalog();
     });
 
     formCancel.addEventListener('click', resetForm);
@@ -752,6 +768,7 @@
         Store.deleteProduct(removeBtn.dataset.remove);
         renderProducts();
         renderStats();
+        pushCatalog();
       }
     });
 
@@ -945,7 +962,7 @@
         var priceProduct = priceMatches[0];
         aaiBotConfirm('This will change <strong>' + Store.escapeHtml(priceProduct.name) + '</strong>\'s price from ' + Store.formatMoney(priceProduct.price) + ' to <strong>' + Store.formatMoney(newPrice) + '</strong>, live on the site immediately. Proceed?', function () {
           Store.updateProduct(priceProduct.id, { price: newPrice });
-          renderProducts(); renderStats();
+          renderProducts(); renderStats(); pushCatalog();
           aaiBotText('Done — ' + Store.escapeHtml(priceProduct.name) + ' is now ' + Store.formatMoney(newPrice) + '.');
         });
         return;
@@ -961,7 +978,7 @@
         var stockProduct = stockMatches[0];
         aaiBotConfirm('This will mark <strong>' + Store.escapeHtml(stockProduct.name) + '</strong> as <strong>' + (wantInStock ? 'in stock' : 'out of stock') + '</strong>. Proceed?', function () {
           Store.updateProduct(stockProduct.id, { inStock: wantInStock });
-          renderProducts();
+          renderProducts(); pushCatalog();
           aaiBotText('Done — ' + Store.escapeHtml(stockProduct.name) + ' is now ' + (wantInStock ? 'in stock' : 'out of stock') + '.');
         });
         return;
@@ -976,7 +993,7 @@
         var delProduct = delMatches[0];
         aaiBotConfirm('⚠️ This will <strong>permanently delete</strong> "' + Store.escapeHtml(delProduct.name) + '" — this cannot be undone. Proceed?', function () {
           Store.deleteProduct(delProduct.id);
-          renderProducts(); renderStats();
+          renderProducts(); renderStats(); pushCatalog();
           aaiBotText('Done — "' + Store.escapeHtml(delProduct.name) + '" has been deleted.');
         });
         return;

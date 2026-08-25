@@ -9,6 +9,13 @@ section.block{padding:10px 0 60px}section.block h2{font:700 28px "Playfair Displ
 <section class="wrap block"><h2>Customer reviews</h2><div id="reviews-summary-wrap"></div><div id="reviews-list"></div><form class="review-form" id="review-form"><h3>Write a review</h3><label>Your rating</label><div class="star-picker" id="star-picker"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div><input type="hidden" id="review-rating" value="5"><label for="review-name">Your name</label><input id="review-name" placeholder="e.g. Priya S." required><label for="review-comment">Your review</label><textarea id="review-comment" rows="3" placeholder="Share your experience with this product" required></textarea><button type="submit">Submit review</button></form></section>
 <script src="cart.js"></script><script>
 const Store = window.LittleGopalStore;
+(async function () {
+// Pull the latest shared catalog before rendering, so a customer landing
+// directly on a product page (e.g. from a saved link) always sees the
+// admin's latest price/stock, not a stale locally-cached copy. This is a
+// single fast network call, awaited here since this page's render logic
+// isn't structured as a re-callable function like the listing pages.
+await Store.pullProductsFromServer();
 const params = new URLSearchParams(location.search);
 const product = params.get('id') ? Store.getProductById(params.get('id')) : Store.getProductByName(params.get('name') || '');
 if (!product) {
@@ -86,4 +93,5 @@ if (!product) {
     renderReviews();
   });
 }
+})();
 </script></body></html>

@@ -21,17 +21,29 @@
     const category = new URLSearchParams(location.search).get('category') || 'clothes';
     const title = Store.CATEGORIES[category] || 'Collection';
     const intro = Store.CATEGORY_INTROS[category] || 'Explore thoughtful essentials for your beloved Thakur ji.';
-    const items = Store.getProductsByCategory(category);
     const products = document.getElementById('products');
     document.title = `${title} | Little Gopal`;
     document.getElementById('title').textContent = title;
     document.getElementById('crumb').textContent = `Home / Collections / ${title}`;
     document.getElementById('intro').textContent = intro;
-    products.innerHTML = items.map(p => { const rating = Store.getRatingSummary(p.id); const wished = Store.isWishlisted(p.id); return `<article class="product" data-price="${p.price}" data-id="${p.id}"><button class="wish${wished ? ' active' : ''}" aria-label="Save ${Store.escapeHtml(p.name)} to wishlist">${wished ? '♥' : '♡'}</button><div class="pic">${Store.visualHtml(p)}</div><h3>${Store.escapeHtml(p.name)}</h3><p class="price">${Store.formatMoney(p.price)}</p><p class="rating">${Store.starsHtml(rating.average)} ${rating.count ? `(${rating.count})` : 'No reviews yet'}</p><button class="add-btn" ${p.inStock === false ? 'disabled' : ''}>${p.inStock === false ? 'Out of stock' : 'Add to cart'}</button></article>`; }).join('') + '<div class="empty" id="empty">No products are available at this price. Please choose a higher price.</div>';
-    const price=document.getElementById('price'),selected=document.getElementById('selected-price'),cards=[...document.querySelectorAll('.product')],count=document.getElementById('count'),empty=document.getElementById('empty'),format=value=>'₹'+Number(value).toLocaleString('en-IN');
-    const maxPrice = Math.max(2500, ...items.map(p => p.price));
-    price.max = maxPrice; price.value = maxPrice; selected.textContent = format(maxPrice);
-    function filterProducts(){const max=+price.value;selected.textContent=format(max);let visible=0;cards.forEach(card=>{const show=+card.dataset.price<=max;card.style.display=show?'':'none';if(show)visible++});count.textContent=`Showing ${visible} ${title.toLowerCase()} product${visible===1?'':'s'}`;empty.style.display=visible?'none':'block'}price.addEventListener('input',()=>selected.textContent=format(price.value));document.getElementById('apply-filter').addEventListener('click',filterProducts);document.getElementById('clear-filter').addEventListener('click',()=>{price.value=maxPrice;filterProducts()});filterProducts();
+    const price=document.getElementById('price'),selected=document.getElementById('selected-price'),count=document.getElementById('count'),format=value=>'₹'+Number(value).toLocaleString('en-IN');
+    let cards = [], empty;
+    function filterProducts(){const max=+price.value;selected.textContent=format(max);let visible=0;cards.forEach(card=>{const show=+card.dataset.price<=max;card.style.display=show?'':'none';if(show)visible++});count.textContent=`Showing ${visible} ${title.toLowerCase()} product${visible===1?'':'s'}`;empty.style.display=visible?'none':'block'}
+    function renderCollection(){
+      const items = Store.getProductsByCategory(category);
+      products.innerHTML = items.map(p => { const rating = Store.getRatingSummary(p.id); const wished = Store.isWishlisted(p.id); return `<article class="product" data-price="${p.price}" data-id="${p.id}"><button class="wish${wished ? ' active' : ''}" aria-label="Save ${Store.escapeHtml(p.name)} to wishlist">${wished ? '♥' : '♡'}</button><div class="pic">${Store.visualHtml(p)}</div><h3>${Store.escapeHtml(p.name)}</h3><p class="price">${Store.formatMoney(p.price)}</p><p class="rating">${Store.starsHtml(rating.average)} ${rating.count ? `(${rating.count})` : 'No reviews yet'}</p><button class="add-btn" ${p.inStock === false ? 'disabled' : ''}>${p.inStock === false ? 'Out of stock' : 'Add to cart'}</button></article>`; }).join('') + '<div class="empty" id="empty">No products are available at this price. Please choose a higher price.</div>';
+      cards = [...document.querySelectorAll('.product')];
+      empty = document.getElementById('empty');
+      const maxPrice = Math.max(2500, ...items.map(p => p.price));
+      price.max = maxPrice; if (!price.dataset.touched) { price.value = maxPrice; selected.textContent = format(maxPrice); }
+      filterProducts();
+    }
+    renderCollection();
+    price.addEventListener('input',()=>{price.dataset.touched='1';selected.textContent=format(price.value)});document.getElementById('apply-filter').addEventListener('click',filterProducts);document.getElementById('clear-filter').addEventListener('click',()=>{price.value=price.max;delete price.dataset.touched;filterProducts()});
+    // Pull the latest shared catalog (admin's product/price/stock changes)
+    // and redraw once it arrives -- initial render above uses whatever this
+    // browser already had cached, so the page shows instantly either way.
+    Store.pullProductsFromServer().then(changed => { if (changed) renderCollection(); });
     products.addEventListener('click', event => {
       const wishBtn = event.target.closest('.wish');
       const addBtn = event.target.closest('.add-btn');

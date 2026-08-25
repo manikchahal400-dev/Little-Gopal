@@ -59,7 +59,9 @@
         const wished = Store.isWishlisted(p.id);
         return `<article class="product" data-id="${p.id}">${p.badge ? `<span class="badge">${Store.escapeHtml(p.badge)}</span>` : ''}<button class="wish${wished ? ' active' : ''}" aria-label="Save ${Store.escapeHtml(p.name)} to wishlist">${wished ? '♥' : '♡'}</button><div class="product-img">${Store.visualHtml(p)}</div><h3>${Store.escapeHtml(p.name)}</h3><p class="price">${Store.formatMoney(p.price)}</p><p class="rating"><span class="stars">${Store.starsHtml(rating.average)}</span> ${rating.count ? `(${rating.count})` : 'No reviews yet'}</p><button class="quick" aria-label="Add ${Store.escapeHtml(p.name)} to bag" ${p.inStock === false ? 'disabled' : ''}>+</button></article>`;
       }
+      let currentCategory = 'all';
       function renderProducts(category) {
+        currentCategory = category || 'all';
         const list = category && category !== 'all' ? Store.getProductsByCategory(category) : Store.getFeaturedProducts();
         productGrid.innerHTML = list.length ? list.map(productCardHtml).join('') : '<p style="grid-column:1/-1;color:#8a6a61">No products in this collection yet.</p>';
         document.getElementById('product-heading').textContent = category && category !== 'all' ? (Store.CATEGORIES[category] || 'Collection') : 'Our divine favourites';
@@ -102,6 +104,11 @@
         }).join('');
       }
       renderDealGrid();
+      // Pull the latest shared catalog (admin's product/price/stock changes
+      // made from the dashboard) and redraw once it arrives -- the initial
+      // render above uses whatever this browser already had cached, so
+      // customers see the page instantly rather than waiting on a network call.
+      Store.pullProductsFromServer().then(changed => { if (changed) { renderProducts(currentCategory); renderDealGrid(); } });
       const searchForm = document.getElementById('site-search'), searchInput = document.getElementById('product-search'), results = document.getElementById('search-results'), resultGrid = document.getElementById('result-grid'), searchHeading = document.getElementById('search-heading');
       searchForm.addEventListener('submit', event => { event.preventDefault(); const query = searchInput.value.trim(); if (!query) return; const matches = Store.searchProducts(query); searchHeading.textContent = `Results for “${query}”`; resultGrid.innerHTML = matches.length ? matches.map(p => `<a class="result-card" href="product.html?id=${encodeURIComponent(p.id)}"><div class="result-icon">${p.icon}</div><h3>${Store.escapeHtml(p.name)}</h3><p>${Store.formatMoney(p.price)} · View product →</p></a>`).join('') : `<div class="no-results">We could not find a product for “${query}”. Try searching for tilak, poshak, singhasan, diya or jhula.</div>`; results.classList.add('show'); results.scrollIntoView({behavior:'smooth', block:'start'}); });
       const aiToggle = document.getElementById('ai-toggle'), aiPanel = document.getElementById('ai-panel'), aiForm = document.getElementById('ai-form'), aiInput = document.getElementById('ai-input'), aiChat = document.getElementById('ai-chat');
