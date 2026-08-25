@@ -4,6 +4,21 @@
 (function () {
   'use strict';
 
+  // Lightweight, aggregate-only site analytics (no per-visitor tracking,
+  // no cookies) so the admin can see page views, popular searches and
+  // most-viewed products to improve the site. Never throws, never blocks
+  // the page it's called from -- if it fails, it just fails silently.
+  function trackBeacon(event, extra) {
+    try {
+      var payload = Object.assign({ event: event, device: (window.innerWidth < 800 ? 'mobile' : 'desktop') }, extra || {});
+      fetch('/api/track/beacon', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), keepalive: true }).catch(function () {});
+    } catch (e) { /* ignore */ }
+  }
+  function currentPageName() {
+    var path = (location.pathname.split('/').pop() || 'index.html').replace('.html', '');
+    return path || 'index';
+  }
+
   var CART_KEY = 'littleGopalCart';
   var CUSTOMER_KEY = 'littleGopalCustomer';
   var ORDERS_KEY = 'littleGopalOrders';
@@ -118,6 +133,7 @@
     if (existing) existing.qty += 1;
     else cart.push({ name: item.name, price: price, image: item.image || '🛍️', qty: 1 });
     saveCart(cart);
+    trackBeacon('add_to_cart');
     if (openDrawer !== false) openDrawer_();
   }
 
@@ -325,6 +341,7 @@
     orders.unshift(order);
     localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
     localStorage.setItem('littleGopalLastOrder', order.id);
+    trackBeacon('order_placed');
     clearCart();
   }
   function getOrder(id) {
@@ -511,7 +528,12 @@
     });
   }
 
-  function ensureUi() { ensureDrawer(); ensureMenu(); }
+  function ensureUi() {
+    ensureDrawer();
+    ensureMenu();
+    // Only count real storefront visits, not the admin's own dashboard use.
+    if (!window.LG_NO_CART_UI) trackBeacon('page_view', { page: currentPageName() });
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureUi);
   else ensureUi();
 
@@ -530,6 +552,6 @@
     getProductById: getProductById, getProductByName: getProductByName, searchProducts: searchProducts,
     getWishlist: getWishlist, isWishlisted: isWishlisted, toggleWishlist: toggleWishlist,
     getReviews: getReviews, addReview: addReview, getRatingSummary: getRatingSummary, starsHtml: starsHtml,
-    visualHtml: visualHtml, compressImage: compressImage
+    visualHtml: visualHtml, compressImage: compressImage, trackBeacon: trackBeacon
   };
 })();

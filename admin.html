@@ -202,8 +202,31 @@
             <div id="recent-orders"></div>
           </div>
           <div class="card">
-            <h2>Getting to a real store</h2>
-            <p class="hint" style="margin:0;line-height:1.7">This dashboard reads orders and products saved in this browser's storage, since the site has no backend yet. To run a real store: move products and orders to a database, add real admin authentication, and connect a payment gateway's server-side APIs (see the notice on the checkout page).</p>
+            <h2>One thing to know</h2>
+            <p class="hint" style="margin:0;line-height:1.7">Products, returns, settings and admin login are all shared server-side now, so they work correctly on any device. Orders are still saved to whichever browser placed them, so "Total orders" and "Recent orders" only reflect orders placed from this browser — use Orders → Find an order to look up a specific order by id regardless of which device the customer used.</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:26px">
+          <h2>Site activity</h2>
+          <p class="hint">How customers are using your site, to help you see what's working.</p>
+          <div class="stat-grid" style="margin-bottom:18px">
+            <div class="stat-card"><span>Page views</span><strong id="stat-pageviews">0</strong></div>
+            <div class="stat-card"><span>Added to cart</span><strong id="stat-addtocart">0</strong></div>
+            <div class="stat-card"><span>Checkouts started</span><strong id="stat-checkoutstarts">0</strong></div>
+            <div class="stat-card"><span>Photo scans used</span><strong id="stat-scans">0</strong></div>
+          </div>
+          <div class="two-col">
+            <div>
+              <h4 style="margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#8a5b3a">Mobile vs desktop</h4>
+              <div id="device-split" style="font-size:13.5px;color:#5a423d">Loading…</div>
+              <h4 style="margin:16px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#8a5b3a">Top searches</h4>
+              <div id="top-searches" style="font-size:13.5px;color:#5a423d">Loading…</div>
+            </div>
+            <div>
+              <h4 style="margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#8a5b3a">Most viewed products</h4>
+              <div id="top-products" style="font-size:13.5px;color:#5a423d">Loading…</div>
+            </div>
           </div>
         </div>
       </section>
@@ -377,6 +400,40 @@
         loadTrendingSettings();
       });
       loadCodSetting();
+      loadAnalytics();
+    }
+
+    // Site activity -- aggregate, anonymous counters only (no per-visitor
+    // data), read from the same shared storage as everything else.
+    function loadAnalytics() {
+      fetch('/api/track/summary', { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (result) {
+        if (!result || !result.ok) return;
+        var s = result.stats || {};
+        var totalPV = Object.keys(s.pageViews || {}).reduce(function (sum, k) { return sum + s.pageViews[k]; }, 0);
+        document.getElementById('stat-pageviews').textContent = totalPV;
+        document.getElementById('stat-addtocart').textContent = s.addToCart || 0;
+        document.getElementById('stat-checkoutstarts').textContent = s.checkoutStarts || 0;
+        document.getElementById('stat-scans').textContent = s.scansUsed || 0;
+
+        var dv = s.deviceViews || {};
+        var dvTotal = (dv.mobile || 0) + (dv.desktop || 0);
+        document.getElementById('device-split').innerHTML = dvTotal
+          ? ('📱 Mobile: ' + Math.round((dv.mobile || 0) / dvTotal * 100) + '% &nbsp; 💻 Desktop: ' + Math.round((dv.desktop || 0) / dvTotal * 100) + '%')
+          : 'Not enough data yet.';
+
+        var searchCounts = {};
+        (s.searches || []).forEach(function (q) { searchCounts[q] = (searchCounts[q] || 0) + 1; });
+        var topSearches = Object.keys(searchCounts).sort(function (a, b) { return searchCounts[b] - searchCounts[a]; }).slice(0, 5);
+        document.getElementById('top-searches').innerHTML = topSearches.length
+          ? topSearches.map(function (q) { return '• ' + Store.escapeHtml(q) + ' (' + searchCounts[q] + ')'; }).join('<br>')
+          : 'No searches recorded yet.';
+
+        var pv = s.productViews || {};
+        var topIds = Object.keys(pv).sort(function (a, b) { return pv[b] - pv[a]; }).slice(0, 5);
+        document.getElementById('top-products').innerHTML = topIds.length
+          ? topIds.map(function (id) { var p = Store.getProductById(id); return '• ' + (p ? Store.escapeHtml(p.name) : id) + ' (' + pv[id] + ' view' + (pv[id] === 1 ? '' : 's') + ')'; }).join('<br>')
+          : 'No product views recorded yet.';
+      }).catch(function () { /* leave the "Loading…" placeholders; retry on next dashboard load */ });
     }
 
     // Cash on Delivery on/off -- lives in shared storage (not localStorage)

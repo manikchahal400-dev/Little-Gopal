@@ -141,6 +141,7 @@
   <script src="cart.js"></script>
   <script>
     var Store = window.LittleGopalStore;
+    Store.trackBeacon('checkout_start');
     var form = document.getElementById('checkout-form');
     var emptyState = document.getElementById('empty-state');
     var couponCode = '';

@@ -25,6 +25,21 @@
       .hero-art{height:480px;position:relative}.arch{position:absolute;right:30px;bottom:0;width:360px;height:435px;background:#d77a55;border-radius:180px 180px 0 0;box-shadow:inset 0 0 0 13px #f9dca4}.lotus{position:absolute;right:0;bottom:1px;font-size:260px;line-height:1;filter:drop-shadow(0 14px 8px #9d5b4540)}.idol{position:absolute;right:94px;bottom:22px;width:225px;height:350px;border-radius:105px 105px 26px 26px;background:linear-gradient(90deg,#b33848,#f3b942 45%,#d55543 47%,#8b2639);box-shadow:inset 0 0 0 9px #ffd978,0 17px 19px #7b3a2b44}.idol:before{content:"🦚";font-size:90px;position:absolute;top:-46px;left:68px}.idol:after{content:"❀";font-size:62px;color:#f6e29a;position:absolute;top:55px;left:81px}.tag{position:absolute;background:#fffdf7;padding:12px 15px;border-radius:8px;box-shadow:0 7px 22px #55352b20;font-size:13px;font-weight:700}.tag.one{top:96px;left:5px}.tag.two{bottom:74px;left:35px;color:#8a482f}
       section{padding:83px 0}.section-top{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:31px}.section-top h2{font:700 clamp(31px,4vw,45px) "Playfair Display";margin:6px 0 0}.section-top a{color:#8d442d;font-weight:700;text-decoration:none;border-bottom:1px solid #8d442d;padding-bottom:3px;font-size:14px}.categories{background:#fffdf8}.category-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:16px}.category{background:#fbf1e3;border-radius:110px 110px 13px 13px;padding:12px;text-align:center;text-decoration:none;color:var(--ink);transition:.2s}.category:hover{transform:translateY(-5px);box-shadow:0 9px 16px #67443219}.category:nth-child(2n){background:#e9efdf}.category:nth-child(3n){background:#f5ded7}.category-icon{height:133px;display:grid;place-items:center;font-size:63px;border-radius:100px 100px 7px 7px;background:#fffaf1}.category strong{display:block;font:600 17px "Playfair Display";margin:12px 0 3px}.category small{font-size:12px;color:#806864}
       .deal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:20px}.deal-panel{background:#fffdf8;border:1px solid #eee0cf;border-radius:10px;padding:20px 20px 18px;display:flex;flex-direction:column}.deal-panel h3{font:600 19px "Playfair Display";margin:0}.deal-panel .deal-sub{font-size:12px;color:#8a6a61;line-height:1.5;margin:4px 0 14px;min-height:32px}.deal-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}.deal-tile{background:#f9ecdb;border-radius:6px;padding:10px 8px;text-align:center;text-decoration:none;color:var(--ink);transition:.15s}.deal-tile:hover{background:#f3dfc4;transform:translateY(-2px)}.deal-tile .deal-icon{font-size:32px;height:50px;display:grid;place-items:center;overflow:hidden;border-radius:4px}.deal-tile .deal-icon img{width:100%;height:100%;object-fit:cover;border-radius:4px}.deal-tile strong{display:block;font-size:11.5px;font-weight:600;margin-top:5px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.deal-tile em{display:block;font-size:11px;color:#a45331;font-weight:700;margin-top:2px;font-style:normal}.deal-explore{margin-top:auto;font-size:13px;font-weight:700;color:#8d442d;text-decoration:none;border-bottom:1px solid #8d442d;padding-bottom:2px;align-self:flex-start}.deal-panel:nth-child(3n+2) .deal-tile{background:#e9efdf}.deal-panel:nth-child(3n+2) .deal-tile:hover{background:#dde8cc}.deal-panel:nth-child(3n) .deal-tile{background:#f5ded7}.deal-panel:nth-child(3n) .deal-tile:hover{background:#eccbc2}
+      #scan-toggle{font-size:19px}
+      .scan-modal{display:none;position:fixed;inset:0;z-index:56;background:#2f1d1bb3;align-items:center;justify-content:center;padding:18px}
+      .scan-modal.open{display:flex}
+      .scan-dialog{width:min(440px,100%);background:#fffdf8;border-radius:12px;box-shadow:0 20px 60px #22110f6b;overflow:hidden}
+      .scan-dialog-top{display:flex;justify-content:space-between;align-items:center;padding:19px 21px;border-bottom:1px solid #eadaca}
+      .scan-dialog-top h2{font:700 24px "Playfair Display";margin:0}
+      .scan-close{background:none;border:0;font-size:22px;cursor:pointer;color:#542d27}
+      .scan-body{padding:22px}
+      .scan-body p{font-size:13.5px;color:#70534c;line-height:1.55;margin:0 0 16px}
+      .scan-actions{display:flex;gap:10px;flex-wrap:wrap}
+      .scan-btn{flex:1;min-width:150px;text-align:center;border:1px solid #542d27;color:#542d27;background:#fffdf8;padding:12px 14px;border-radius:6px;font-weight:700;font-size:13.5px;cursor:pointer;display:block;box-sizing:border-box}
+      .scan-btn.secondary{background:#542d27;color:#fff}
+      #scan-preview{margin-top:16px;text-align:center}
+      #scan-preview img{max-width:100%;max-height:200px;border-radius:8px}
+      #scan-status{margin-top:12px;font-size:13px;color:#8a6a61;text-align:center;min-height:16px}
       .trending{background:#fffdf8;padding:56px 0}
       .trending-slider{position:relative;overflow:hidden;padding:6px 2px}
       .trending-track{display:flex;gap:16px;transition:transform .5s ease}
@@ -50,7 +65,23 @@
   </head>
   <body>
     <div class="notice">ॐ  Free shipping on orders above ₹999 &nbsp; • &nbsp; Made with devotion</div>
-    <header><div class="wrap topnav"><a class="brand" href="#home"><img src="logo.jpeg" alt="" style="height:42px;width:42px;object-fit:cover;border-radius:50%;vertical-align:middle;margin-right:8px">Little <span>Gopal</span></a><nav><a href="#collections">Collections</a><a href="#bestsellers">Best sellers</a><a href="#about">Our story</a><a href="#contact">Contact</a></nav><div class="nav-actions"><form class="search-form" id="site-search"><input id="product-search" type="search" placeholder="Search products" aria-label="Search products" /><button aria-label="Search">⌕</button></form><button class="icon-btn" id="account-toggle" aria-label="Customer account" aria-expanded="false">👤</button><div class="account-menu" id="account-menu"><div class="account-welcome" id="account-welcome"><strong>Welcome, devotee</strong>Sign in to see your account.</div><button class="account-option" id="login-option">Log in</button><button class="account-option" id="details-option">My account details</button><button class="account-option" id="orders-option">My orders</button><a class="account-option" href="admin.html" style="display:block;text-decoration:none;box-sizing:border-box">🛠️ Admin dashboard</a><button class="account-option logout" id="logout-option">Log out</button><div class="account-message" id="account-message"></div></div></div></header>
+    <header><div class="wrap topnav"><a class="brand" href="#home"><img src="logo.jpeg" alt="" style="height:42px;width:42px;object-fit:cover;border-radius:50%;vertical-align:middle;margin-right:8px">Little <span>Gopal</span></a><nav><a href="#collections">Collections</a><a href="#bestsellers">Best sellers</a><a href="#about">Our story</a><a href="#contact">Contact</a></nav><div class="nav-actions"><form class="search-form" id="site-search"><input id="product-search" type="search" placeholder="Search products" aria-label="Search products" /><button aria-label="Search">⌕</button></form><button class="icon-btn" id="scan-toggle" aria-label="Scan a product photo" title="Scan a product photo" type="button">📷</button><button class="icon-btn" id="account-toggle" aria-label="Customer account" aria-expanded="false">👤</button><div class="account-menu" id="account-menu"><div class="account-welcome" id="account-welcome"><strong>Welcome, devotee</strong>Sign in to see your account.</div><button class="account-option" id="login-option">Log in</button><button class="account-option" id="details-option">My account details</button><button class="account-option" id="orders-option">My orders</button><a class="account-option" href="admin.html" style="display:block;text-decoration:none;box-sizing:border-box">🛠️ Admin dashboard</a><button class="account-option logout" id="logout-option">Log out</button><div class="account-message" id="account-message"></div></div></div></header>
+    <div class="scan-modal" id="scan-modal">
+      <div class="scan-dialog">
+        <div class="scan-dialog-top"><h2>Scan a product</h2><button class="scan-close" id="scan-close" type="button" aria-label="Close">✕</button></div>
+        <div class="scan-body">
+          <p>Take or upload a photo of a product you're looking for, and we'll find similar items from our collection.</p>
+          <div class="scan-actions">
+            <label class="scan-btn" for="scan-camera-input">📷 Take a photo</label>
+            <input type="file" id="scan-camera-input" accept="image/*" capture="environment" hidden />
+            <label class="scan-btn secondary" for="scan-upload-input">🖼️ Upload a photo</label>
+            <input type="file" id="scan-upload-input" accept="image/*" hidden />
+          </div>
+          <div id="scan-preview" hidden><img id="scan-preview-img" alt="Your uploaded photo" /></div>
+          <div id="scan-status"></div>
+        </div>
+      </div>
+    </div>
     <main>
       <section class="hero" id="home"><div class="wrap hero-grid"><div><div class="eyebrow">For your beloved Thakur ji</div><h1>Little things, made divine.</h1><p>Beautiful essentials for Laddu Gopal, Krishna ji and Radha Rani—chosen with love for every seva and celebration.</p><a class="btn" href="#collections">Explore collections <span>→</span></a><a class="btn btn-light" href="#about">Our story</a></div><div class="hero-art" aria-label="Decorative Krishna ji idol illustration"><div class="tag one">✨ Handpicked with love</div><div class="arch"></div><div class="idol"></div><div class="lotus">🪷</div><div class="tag two">For every divine moment</div></div></div></section>
       <section class="trending" id="trending" hidden><div class="wrap"><div class="section-top"><div><div class="eyebrow">Moving fast</div><h2>Trending now</h2></div></div><div class="trending-slider"><div class="trending-track" id="trending-track"></div></div><div class="trending-nav"><button type="button" id="trending-prev" aria-label="Previous">←</button><button type="button" id="trending-next" aria-label="Next">→</button></div></div></section>
@@ -169,7 +200,46 @@
       // customers see the page instantly rather than waiting on a network call.
       Store.pullProductsFromServer().then(changed => { if (changed) { renderProducts(currentCategory); renderDealGrid(); } renderTrending(); });
       const searchForm = document.getElementById('site-search'), searchInput = document.getElementById('product-search'), results = document.getElementById('search-results'), resultGrid = document.getElementById('result-grid'), searchHeading = document.getElementById('search-heading');
-      searchForm.addEventListener('submit', event => { event.preventDefault(); const query = searchInput.value.trim(); if (!query) return; const matches = Store.searchProducts(query); searchHeading.textContent = `Results for “${query}”`; resultGrid.innerHTML = matches.length ? matches.map(p => `<a class="result-card" href="product.html?id=${encodeURIComponent(p.id)}"><div class="result-icon">${p.icon}</div><h3>${Store.escapeHtml(p.name)}</h3><p>${Store.formatMoney(p.price)} · View product →</p></a>`).join('') : `<div class="no-results">We could not find a product for “${query}”. Try searching for tilak, poshak, singhasan, diya or jhula.</div>`; results.classList.add('show'); results.scrollIntoView({behavior:'smooth', block:'start'}); });
+      searchForm.addEventListener('submit', event => { event.preventDefault(); const query = searchInput.value.trim(); if (!query) return; Store.trackBeacon('search', { query }); const matches = Store.searchProducts(query); searchHeading.textContent = `Results for “${query}”`; resultGrid.innerHTML = matches.length ? matches.map(p => `<a class="result-card" href="product.html?id=${encodeURIComponent(p.id)}"><div class="result-icon">${p.icon}</div><h3>${Store.escapeHtml(p.name)}</h3><p>${Store.formatMoney(p.price)} · View product →</p></a>`).join('') : `<div class="no-results">We could not find a product for “${query}”. Try searching for tilak, poshak, singhasan, diya or jhula.</div>`; results.classList.add('show'); results.scrollIntoView({behavior:'smooth', block:'start'}); });
+
+      // Photo scanner -- take/upload a photo, get search keywords back from
+      // Claude's vision API, then reuse the same product search + results UI.
+      const scanToggle = document.getElementById('scan-toggle'), scanModal = document.getElementById('scan-modal'), scanClose = document.getElementById('scan-close');
+      const scanStatus = document.getElementById('scan-status'), scanPreviewWrap = document.getElementById('scan-preview'), scanPreviewImg = document.getElementById('scan-preview-img');
+      function openScanModal() { scanModal.classList.add('open'); scanStatus.textContent = ''; scanPreviewWrap.hidden = true; }
+      function closeScanModal() { scanModal.classList.remove('open'); }
+      scanToggle.addEventListener('click', openScanModal);
+      scanClose.addEventListener('click', closeScanModal);
+      scanModal.addEventListener('click', event => { if (event.target === scanModal) closeScanModal(); });
+      async function handleScanFile(file) {
+        if (!file) return;
+        scanStatus.textContent = 'Reading photo…';
+        let dataUri;
+        try { dataUri = await Store.compressImage(file, 800, 0.75); }
+        catch (e) { scanStatus.textContent = 'Could not read that photo. Please try another.'; return; }
+        scanPreviewImg.src = dataUri; scanPreviewWrap.hidden = false;
+        scanStatus.textContent = 'Looking for similar products…';
+        try {
+          const resp = await fetch('/api/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: dataUri }) });
+          const data = await resp.json();
+          if (!resp.ok || !data.ok) { scanStatus.textContent = data.error || 'Could not analyze that photo. Please try again.'; return; }
+          const keywords = data.keywords || [];
+          if (!keywords.length) { scanStatus.textContent = 'Could not identify a product in that photo. Please try a clearer photo.'; return; }
+          const seen = new Set();
+          let matches = [];
+          keywords.forEach(kw => { Store.searchProducts(kw).forEach(p => { if (!seen.has(p.id)) { seen.add(p.id); matches.push(p); } }); });
+          Store.trackBeacon('scan_used');
+          closeScanModal();
+          searchHeading.textContent = `Products matching your photo (${keywords.join(', ')})`;
+          resultGrid.innerHTML = matches.length ? matches.slice(0, 12).map(p => `<a class="result-card" href="product.html?id=${encodeURIComponent(p.id)}"><div class="result-icon">${p.icon}</div><h3>${Store.escapeHtml(p.name)}</h3><p>${Store.formatMoney(p.price)} · View product →</p></a>`).join('') : `<div class="no-results">We could not find a close match for that photo. Try browsing our collections instead.</div>`;
+          results.classList.add('show');
+          results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (e) {
+          scanStatus.textContent = 'Could not reach the photo search service. Please try again.';
+        }
+      }
+      document.getElementById('scan-camera-input').addEventListener('change', e => handleScanFile(e.target.files[0]));
+      document.getElementById('scan-upload-input').addEventListener('change', e => handleScanFile(e.target.files[0]));
       const aiToggle = document.getElementById('ai-toggle'), aiPanel = document.getElementById('ai-panel'), aiForm = document.getElementById('ai-form'), aiInput = document.getElementById('ai-input'), aiChat = document.getElementById('ai-chat');
       aiToggle.addEventListener('click', () => { const open = aiPanel.classList.toggle('open'); aiToggle.setAttribute('aria-expanded', open); if (open) aiInput.focus(); });
       const aiLink = p => `<a class="ai-product-link" href="product.html?id=${encodeURIComponent(p.id)}">${Store.escapeHtml(p.name)} · ${Store.formatMoney(p.price)} →</a>`;

@@ -22,6 +22,7 @@ if (!product) {
   document.querySelector('main').innerHTML = '<div style="padding:60px 0;text-align:center"><h1 style="font-family:\'Playfair Display\'">Product not found</h1><p><a href="index.html#bestsellers" style="color:#542d27;font-weight:700">← Back to shop</a></p></div>';
   document.querySelectorAll('section.block').forEach(s => s.hidden = true);
 } else {
+  Store.trackBeacon('product_view', { productId: product.id });
   document.title = `${product.name} | Little Gopal`;
   document.getElementById('name').textContent = product.name;
   document.getElementById('image-visual').innerHTML = Store.visualHtml(product);
