@@ -1,10 +1,8 @@
-/* Admin login: verify username + password server-side against stored
-   hashes, then issue a short-lived HttpOnly session cookie. Single step —
-   the earlier two-step (WhatsApp/email OTP, then authenticator app code)
-   versions were removed after proving too unreliable to debug remotely;
-   this keeps the real server-side password check + hashing + lockout,
-   without a second step that depends on phone clock sync or a second
-   network round trip. */
+/* Consolidated admin-auth routes: /api/auth/start, /api/auth/session,
+   /api/auth/logout -- combined into one Vercel serverless function
+   (routed by the [action] filename segment) so the project stays under
+   the Hobby plan's 12-function-per-deployment limit. Behaviour of each
+   action is unchanged from the original separate files. */
 const lib = require('../_lib');
 
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -16,9 +14,7 @@ const SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 // the password hashing is what actually protects the account.
 const attemptsByKey = global.__lgAttempts || (global.__lgAttempts = new Map());
 
-module.exports = async function handler(req, res) {
-  lib.setCors(req, res);
-  if (req.method === 'OPTIONS') return res.status(204).end();
+async function start(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const key = (req.headers['x-forwarded-for'] || 'local');
@@ -51,4 +47,27 @@ module.exports = async function handler(req, res) {
     `lg_admin_session=${session}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_TTL_MS / 1000}` + (isProd ? '; Secure' : ''));
 
   return res.status(200).json({ ok: true });
+}
+
+async function session(req, res) {
+  const cookies = lib.parseCookies(req.headers.cookie);
+  const payload = lib.verifyToken(cookies.lg_admin_session, process.env.SESSION_SECRET);
+  const valid = !!payload && Date.now() < payload.exp;
+  return res.status(200).json({ loggedIn: valid });
+}
+
+async function logout(req, res) {
+  res.setHeader('Set-Cookie', 'lg_admin_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0');
+  return res.status(200).json({ ok: true });
+}
+
+module.exports = async function handler(req, res) {
+  lib.setCors(req, res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
+  const action = req.query.action;
+  if (action === 'start') return start(req, res);
+  if (action === 'session') return session(req, res);
+  if (action === 'logout') return logout(req, res);
+  return res.status(404).json({ error: 'Unknown endpoint.' });
 };
