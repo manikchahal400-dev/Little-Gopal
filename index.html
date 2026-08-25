@@ -211,6 +211,45 @@
       scanToggle.addEventListener('click', openScanModal);
       scanClose.addEventListener('click', closeScanModal);
       scanModal.addEventListener('click', event => { if (event.target === scanModal) closeScanModal(); });
+      // Free, no-cost fallback: sample the photo's average colour client-side
+      // and match it to the nearest named colour. Used automatically whenever
+      // the AI vision scan (api/scan) isn't available -- no key configured,
+      // no credits, or a network hiccup -- so the scanner still does
+      // something useful even with zero API cost. If AI vision is ever
+      // enabled/funded, it's tried first and this is skipped entirely.
+      const COLOR_PALETTE = [
+        ['red', 200, 30, 30], ['maroon', 120, 30, 35], ['pink', 235, 140, 170], ['orange', 230, 130, 40],
+        ['yellow', 225, 200, 50], ['gold', 205, 165, 70], ['green', 70, 140, 75], ['blue', 50, 95, 185],
+        ['purple', 130, 75, 165], ['white', 240, 235, 225], ['black', 35, 30, 30], ['brown', 120, 80, 50],
+        ['silver', 190, 190, 190], ['cream', 245, 230, 200]
+      ];
+      function detectDominantColor(dataUri) {
+        return new Promise(resolve => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const size = 32;
+              const canvas = document.createElement('canvas');
+              canvas.width = size; canvas.height = size;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, size, size);
+              const data = ctx.getImageData(0, 0, size, size).data;
+              let r = 0, g = 0, b = 0, count = 0;
+              for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i + 1]; b += data[i + 2]; count++; }
+              if (!count) return resolve(null);
+              r = Math.round(r / count); g = Math.round(g / count); b = Math.round(b / count);
+              let best = null, bestDist = Infinity;
+              COLOR_PALETTE.forEach(([name, pr, pg, pb]) => {
+                const dist = (r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2;
+                if (dist < bestDist) { bestDist = dist; best = name; }
+              });
+              resolve(best);
+            } catch (e) { resolve(null); }
+          };
+          img.onerror = () => resolve(null);
+          img.src = dataUri;
+        });
+      }
       async function handleScanFile(file) {
         if (!file) return;
         scanStatus.textContent = 'Reading photo…';
@@ -219,24 +258,26 @@
         catch (e) { scanStatus.textContent = 'Could not read that photo. Please try another.'; return; }
         scanPreviewImg.src = dataUri; scanPreviewWrap.hidden = false;
         scanStatus.textContent = 'Looking for similar products…';
+        let keywords = [];
         try {
           const resp = await fetch('/api/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: dataUri }) });
           const data = await resp.json();
-          if (!resp.ok || !data.ok) { scanStatus.textContent = data.error || 'Could not analyze that photo. Please try again.'; return; }
-          const keywords = data.keywords || [];
-          if (!keywords.length) { scanStatus.textContent = 'Could not identify a product in that photo. Please try a clearer photo.'; return; }
-          const seen = new Set();
-          let matches = [];
-          keywords.forEach(kw => { Store.searchProducts(kw).forEach(p => { if (!seen.has(p.id)) { seen.add(p.id); matches.push(p); } }); });
-          Store.trackBeacon('scan_used');
-          closeScanModal();
-          searchHeading.textContent = `Products matching your photo (${keywords.join(', ')})`;
-          resultGrid.innerHTML = matches.length ? matches.slice(0, 12).map(p => `<a class="result-card" href="product.html?id=${encodeURIComponent(p.id)}"><div class="result-icon">${p.icon}</div><h3>${Store.escapeHtml(p.name)}</h3><p>${Store.formatMoney(p.price)} · View product →</p></a>`).join('') : `<div class="no-results">We could not find a close match for that photo. Try browsing our collections instead.</div>`;
-          results.classList.add('show');
-          results.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } catch (e) {
-          scanStatus.textContent = 'Could not reach the photo search service. Please try again.';
+          if (resp.ok && data.ok && data.keywords && data.keywords.length) keywords = data.keywords;
+        } catch (e) { /* fall through to free colour matching below */ }
+        if (!keywords.length) {
+          const color = await detectDominantColor(dataUri);
+          if (color) keywords = [color];
         }
+        if (!keywords.length) { scanStatus.textContent = 'Could not identify a product in that photo. Please try a clearer photo, or use text search instead.'; return; }
+        const seen = new Set();
+        let matches = [];
+        keywords.forEach(kw => { Store.searchProducts(kw).forEach(p => { if (!seen.has(p.id)) { seen.add(p.id); matches.push(p); } }); });
+        Store.trackBeacon('scan_used');
+        closeScanModal();
+        searchHeading.textContent = `Products similar to your photo (${keywords.join(', ')})`;
+        resultGrid.innerHTML = matches.length ? matches.slice(0, 12).map(p => `<a class="result-card" href="product.html?id=${encodeURIComponent(p.id)}"><div class="result-icon">${p.icon}</div><h3>${Store.escapeHtml(p.name)}</h3><p>${Store.formatMoney(p.price)} · View product →</p></a>`).join('') : `<div class="no-results">We could not find a close match for that photo. Try browsing our collections instead.</div>`;
+        results.classList.add('show');
+        results.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
       document.getElementById('scan-camera-input').addEventListener('change', e => handleScanFile(e.target.files[0]));
       document.getElementById('scan-upload-input').addEventListener('change', e => handleScanFile(e.target.files[0]));

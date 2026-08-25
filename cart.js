@@ -243,7 +243,11 @@
   function searchProducts(query) {
     var text = String(query).toLowerCase();
     return getProducts().filter(function (p) {
-      return p.name.toLowerCase().indexOf(text) !== -1 || (CATEGORIES[p.category] || '').toLowerCase().indexOf(text) !== -1;
+      if (p.name.toLowerCase().indexOf(text) !== -1) return true;
+      if ((CATEGORIES[p.category] || '').toLowerCase().indexOf(text) !== -1) return true;
+      if ((p.colors || []).some(function (c) { return c.toLowerCase().indexOf(text) !== -1; })) return true;
+      if ((p.description || '').toLowerCase().indexOf(text) !== -1) return true;
+      return false;
     });
   }
 
