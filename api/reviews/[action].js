@@ -86,6 +86,30 @@ async function add(req, res) {
   return res.status(200).json({ ok: true, review: review });
 }
 
+// Admin-only moderation: remove a spam/fake/inappropriate review, identified
+// by product + the exact date it was posted (reviews have no separate id --
+// date is effectively unique per product since it's a full ISO timestamp).
+async function remove(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (!lib.requireAdmin(req)) return res.status(401).json({ error: 'Not signed in.' });
+
+  const body = await lib.readJsonBody(req);
+  const productId = String(body.productId || '').trim();
+  const date = String(body.date || '').trim();
+  if (!productId || !date) return res.status(400).json({ error: 'Missing review reference.' });
+
+  try {
+    const all = await loadAll();
+    const before = (all[productId] || []).length;
+    all[productId] = (all[productId] || []).filter(function (r) { return r.date !== date; });
+    if (all[productId].length === before) return res.status(404).json({ error: 'Review not found.' });
+    await saveAll(all);
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    return res.status(503).json({ error: 'Could not remove this review right now.' });
+  }
+}
+
 module.exports = async function handler(req, res) {
   lib.setCors(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -93,5 +117,6 @@ module.exports = async function handler(req, res) {
   if (action === 'get') return get(req, res);
   if (action === 'summary') return summary(req, res);
   if (action === 'add') return add(req, res);
+  if (action === 'remove') return remove(req, res);
   return res.status(404).json({ error: 'Unknown endpoint.' });
 };
