@@ -139,7 +139,13 @@
       // never goes stale, plus a link into the full collection. Laddu Gopal ji already
       // has its own dedicated promo band above, so it's not repeated here.
       function categoryHref(category) { return category === 'beauty' ? 'beauty.html' : `collection.html?category=${category}`; }
-      function dealTileHtml(p) { return `<a class="deal-tile" href="product.html?id=${encodeURIComponent(p.id)}"><div class="deal-icon">${Store.visualHtml(p)}</div><strong>${Store.escapeHtml(p.name)}</strong><em>${Store.formatMoney(p.price)}</em></a>`; }
+      // These home-page tiles are a category preview, not a final pick --
+      // every tile (whichever product it happens to show) links to the full
+      // results listing for that category, so a customer sees every design
+      // first and only reaches one product's own size-selector after
+      // deliberately choosing it from that listing (same as tapping a
+      // search result on Amazon lands on results, not straight to checkout).
+      function dealTileHtml(p, cat) { return `<a class="deal-tile" href="${categoryHref(cat)}"><div class="deal-icon">${Store.visualHtml(p)}</div><strong>${Store.escapeHtml(p.name)}</strong><em>${Store.formatMoney(p.price)}</em></a>`; }
       function renderDealGrid() {
         const grid = document.getElementById('deal-grid');
         grid.innerHTML = Object.keys(Store.CATEGORIES).filter(cat => cat !== 'gopalji').map(cat => {
@@ -147,7 +153,7 @@
           const products = all.slice(0, 14);
           if (!products.length) return '';
           const wide = cat === 'clothes' ? ' wide' : '';
-          return `<div class="deal-panel${wide}"><h3>${Store.escapeHtml(Store.CATEGORIES[cat])}</h3><p class="deal-sub">${Store.escapeHtml(Store.CATEGORY_INTROS[cat] || '')}</p><div class="deal-tiles">${products.map(dealTileHtml).join('')}</div><a class="deal-explore" href="${categoryHref(cat)}">Explore all ${all.length} →</a></div>`;
+          return `<div class="deal-panel${wide}"><h3>${Store.escapeHtml(Store.CATEGORIES[cat])}</h3><p class="deal-sub">${Store.escapeHtml(Store.CATEGORY_INTROS[cat] || '')}</p><div class="deal-tiles">${products.map(p => dealTileHtml(p, cat)).join('')}</div><a class="deal-explore" href="${categoryHref(cat)}">Explore all ${all.length} →</a></div>`;
         }).join('');
       }
       renderDealGrid();
