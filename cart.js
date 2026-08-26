@@ -223,7 +223,8 @@
       id: id, name: product.name, price: toNumber(product.price), category: product.category,
       icon: product.icon || '🛍️', image: product.image || '', badge: product.badge || '', featured: !!product.featured,
       description: product.description || '', sizes: product.sizes || [], colors: product.colors || [],
-      sizePrices: product.sizePrices || null, inStock: product.inStock !== false
+      sizePrices: product.sizePrices || null, inStock: product.inStock !== false,
+      stockCount: product.stockCount === undefined ? null : product.stockCount
     };
     list.push(full);
     saveProducts(list);

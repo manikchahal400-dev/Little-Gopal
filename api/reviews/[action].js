@@ -19,6 +19,24 @@ const MAX_COMMENT_CHARS = 800;
 async function loadAll() { return lib.kvGetJSON(REVIEWS_KEY, {}); }
 async function saveAll(all) { return lib.kvSetJSON(REVIEWS_KEY, all); }
 
+// Admin-only: every review across every product, flattened into one list
+// (newest first) so the dashboard can show them all in one place for
+// moderation, without the admin needing to know which product to check.
+async function listAll(req, res) {
+  if (!lib.requireAdmin(req)) return res.status(401).json({ error: 'Not signed in.' });
+  try {
+    const all = await loadAll();
+    const flat = [];
+    Object.keys(all).forEach(function (productId) {
+      (all[productId] || []).forEach(function (r) { flat.push(Object.assign({ productId: productId }, r)); });
+    });
+    flat.sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+    return res.status(200).json({ ok: true, reviews: flat });
+  } catch (err) {
+    return res.status(503).json({ error: 'Could not load reviews right now.' });
+  }
+}
+
 async function get(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const body = await lib.readJsonBody(req);
@@ -118,5 +136,6 @@ module.exports = async function handler(req, res) {
   if (action === 'summary') return summary(req, res);
   if (action === 'add') return add(req, res);
   if (action === 'remove') return remove(req, res);
+  if (action === 'list-all') return listAll(req, res);
   return res.status(404).json({ error: 'Unknown endpoint.' });
 };
