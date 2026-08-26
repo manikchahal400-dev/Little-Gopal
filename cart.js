@@ -335,7 +335,7 @@
 
   // Returns an <img> tag if the product has a real photo, otherwise the emoji icon as plain text.
   function visualHtml(p) {
-    if (p && p.image) return '<img src="' + p.image + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';
+    if (p && p.image) return '<img src="' + p.image + '" alt="" style="width:100%;height:100%;object-fit:contain;border-radius:inherit">';
     return (p && p.icon) || '🛍️';
   }
 
