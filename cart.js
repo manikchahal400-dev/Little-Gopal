@@ -26,9 +26,20 @@
   var WISHLIST_KEY = 'littleGopalWishlist';
   var REVIEWS_KEY = 'littleGopalReviews';
   var RETURN_REQUESTS_KEY = 'littleGopalReturnRequests';
+  var IDENTITY_KEY = 'littleGopalIdentity';
   var COUPONS = { GOPAL10: 0.10 };
   var FREE_SHIPPING_FROM = 999;
   var SHIPPING_FEE = 49;
+  var GIFT_WRAP_FEE = 39;
+
+  // Verified customer identity (from OTP login) -- shared across every page,
+  // not just account.html, so checkout/rewards can tell whether the current
+  // browser belongs to a logged-in, verified customer.
+  function getIdentity() {
+    try { return JSON.parse(localStorage.getItem(IDENTITY_KEY) || 'null'); } catch (e) { return null; }
+  }
+  function saveIdentity(identity) { localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity)); }
+  function clearIdentity() { localStorage.removeItem(IDENTITY_KEY); }
 
   var CATEGORIES = {
     gopalji: 'Laddu Gopal ji',
@@ -147,15 +158,28 @@
   function removeFromCart(name) { saveCart(getCart().filter(function (p) { return p.name !== name; })); }
   function clearCart() { saveCart([]); }
 
-  function getTotals(couponCode) {
+  function getTotals(couponCode, opts) {
+    opts = opts || {};
     var cart = getCart();
     var subtotal = cart.reduce(function (sum, i) { return sum + i.price * i.qty; }, 0);
     var count = cart.reduce(function (sum, i) { return sum + i.qty; }, 0);
     var rate = (couponCode && COUPONS[String(couponCode).toUpperCase()]) || 0;
-    var discount = Math.round(subtotal * rate);
+    var couponDiscount = Math.round(subtotal * rate);
+    // "Extra" discount = redeemed loyalty points + an applied referral bonus,
+    // combined by the caller into one rupee amount. Capped so discounts can
+    // never push the order below zero.
+    var extraDiscount = Math.max(0, Math.round(Number(opts.extraDiscount) || 0));
+    var maxExtra = Math.max(subtotal - couponDiscount, 0);
+    if (extraDiscount > maxExtra) extraDiscount = maxExtra;
+    var discount = couponDiscount + extraDiscount;
+    var giftWrapFee = opts.giftWrap ? GIFT_WRAP_FEE : 0;
     var shipping = subtotal === 0 || (subtotal - discount) >= FREE_SHIPPING_FROM ? 0 : SHIPPING_FEE;
-    var total = subtotal - discount + shipping;
-    return { cart: cart, subtotal: subtotal, count: count, discount: discount, shipping: shipping, total: total };
+    var total = Math.max(subtotal - discount + shipping + giftWrapFee, 0);
+    return {
+      cart: cart, subtotal: subtotal, count: count,
+      discount: discount, couponDiscount: couponDiscount, extraDiscount: extraDiscount,
+      shipping: shipping, giftWrapFee: giftWrapFee, total: total
+    };
   }
 
   function slugify(name) {
@@ -543,11 +567,13 @@
 
   window.LittleGopalStore = {
     CART_KEY: CART_KEY, CUSTOMER_KEY: CUSTOMER_KEY, ORDERS_KEY: ORDERS_KEY, PRODUCTS_KEY: PRODUCTS_KEY, COUPONS: COUPONS,
-    FREE_SHIPPING_FROM: FREE_SHIPPING_FROM, SHIPPING_FEE: SHIPPING_FEE, CATEGORIES: CATEGORIES, CATEGORY_INTROS: CATEGORY_INTROS,
+    FREE_SHIPPING_FROM: FREE_SHIPPING_FROM, SHIPPING_FEE: SHIPPING_FEE, GIFT_WRAP_FEE: GIFT_WRAP_FEE,
+    CATEGORIES: CATEGORIES, CATEGORY_INTROS: CATEGORY_INTROS,
     toNumber: toNumber, formatMoney: formatMoney, escapeHtml: escapeHtml, slugify: slugify,
     getCart: getCart, addToCart: addToCart, setQty: setQty, removeFromCart: removeFromCart, clearCart: clearCart,
     getTotals: getTotals, openDrawer: openDrawer_, renderDrawer: renderDrawer,
     getCustomer: getCustomer, saveCustomer: saveCustomer,
+    getIdentity: getIdentity, saveIdentity: saveIdentity, clearIdentity: clearIdentity,
     getReturnRequestForOrder: getReturnRequestForOrder, saveReturnRequestForOrder: saveReturnRequestForOrder,
     getOrders: getOrders, placeOrder: placeOrder, getOrder: getOrder, updateOrderStatus: updateOrderStatus, makeOrderId: makeOrderId,
     getProducts: getProducts, addProduct: addProduct, updateProduct: updateProduct, deleteProduct: deleteProduct,

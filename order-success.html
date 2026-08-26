@@ -64,13 +64,22 @@
         ? '<span class="badge">Paid via ' + Store.escapeHtml(order.paymentMethod) + '</span>'
         : '<span class="badge pending">' + Store.escapeHtml(order.paymentMethod) + ' — pay on delivery</span>';
       var address = order.customer;
+      var discountLabel = 'Discount';
+      var discountBits = [];
+      if (order.coupon) discountBits.push(Store.escapeHtml(order.coupon));
+      if (order.pointsRedeemed) discountBits.push(order.pointsRedeemed + ' points');
+      if (order.referralCode) discountBits.push('referral');
+      if (discountBits.length) discountLabel += ' (' + discountBits.join(' + ') + ')';
+      var giftLine = order.giftWrap ? '<div class="totals-line"><span>Gift wrapping</span><span>' + Store.formatMoney(order.giftWrapFee || 0) + '</span></div>' : '';
+      var giftNote = (order.giftWrap && order.giftMessage) ? '<p style="margin-top:10px"><strong>Gift message:</strong> ' + Store.escapeHtml(order.giftMessage) + '</p>' : (order.giftWrap ? '<p style="margin-top:10px"><strong>🎁 Gift wrapped</strong></p>' : '');
       content.insertAdjacentHTML('beforeend',
         '<div class="card"><h2>Order items</h2>' + itemsHtml +
         '<div class="totals-line"><span>Subtotal</span><span>' + Store.formatMoney(order.subtotal) + '</span></div>' +
-        (order.discount ? '<div class="totals-line"><span>Discount' + (order.coupon ? ' (' + Store.escapeHtml(order.coupon) + ')' : '') + '</span><span>−' + Store.formatMoney(order.discount) + '</span></div>' : '') +
+        (order.discount ? '<div class="totals-line"><span>' + discountLabel + '</span><span>−' + Store.formatMoney(order.discount) + '</span></div>' : '') +
+        giftLine +
         '<div class="totals-line"><span>Shipping</span><span>' + (order.shipping ? Store.formatMoney(order.shipping) : 'FREE') + '</span></div>' +
         '<div class="totals-line grand"><span>Total paid</span><span>' + Store.formatMoney(order.total) + '</span></div></div>' +
-        '<div class="card grid2"><div><h2>Delivery address</h2><p><strong>' + Store.escapeHtml(address.name) + '</strong></p><p>' + Store.escapeHtml(address.address) + '</p><p>' + Store.escapeHtml(address.city) + ', ' + Store.escapeHtml(address.state) + ' — ' + Store.escapeHtml(address.pincode) + '</p><p>' + Store.escapeHtml(address.phone) + ' · ' + Store.escapeHtml(address.email) + '</p></div><div><h2>Payment</h2>' + paidBadge + '<p style="margin-top:14px">Order date: ' + new Date(order.date).toLocaleString('en-IN') + '</p></div></div>' +
+        '<div class="card grid2"><div><h2>Delivery address</h2><p><strong>' + Store.escapeHtml(address.name) + '</strong></p><p>' + Store.escapeHtml(address.address) + '</p><p>' + Store.escapeHtml(address.city) + ', ' + Store.escapeHtml(address.state) + ' — ' + Store.escapeHtml(address.pincode) + '</p><p>' + Store.escapeHtml(address.phone) + ' · ' + Store.escapeHtml(address.email) + '</p>' + giftNote + '</div><div><h2>Payment</h2>' + paidBadge + '<p style="margin-top:14px">Order date: ' + new Date(order.date).toLocaleString('en-IN') + '</p></div></div>' +
         '<div class="actions"><a class="primary" href="index.html#bestsellers">Continue shopping</a><a class="secondary" href="index.html">View my orders</a></div>'
       );
     }

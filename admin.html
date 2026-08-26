@@ -578,13 +578,19 @@
       var addr = order.customer;
       var deliveredLine = '<p><strong>Delivered on:</strong> ' + (order.deliveredAt ? new Date(order.deliveredAt).toLocaleString('en-IN') : 'Not yet delivered') + '</p>';
       var cancelledLine = order.cancelledAt ? '<p><strong>Cancelled on:</strong> ' + new Date(order.cancelledAt).toLocaleString('en-IN') + '</p>' : '';
+      var giftLine = order.giftWrap ? '<p><strong>🎁 Gift wrapped' + (order.giftMessage ? ':</strong> "' + Store.escapeHtml(order.giftMessage) + '"' : '') + (order.giftMessage ? '' : '</strong>') + '</p>' : '';
+      var rewardsBits = [];
+      if (order.coupon) rewardsBits.push('coupon ' + Store.escapeHtml(order.coupon));
+      if (order.pointsRedeemed) rewardsBits.push(order.pointsRedeemed + ' points redeemed');
+      if (order.referralCode) rewardsBits.push('referral ' + Store.escapeHtml(order.referralCode));
+      var rewardsLine = rewardsBits.length ? '<p><strong>Discounts used:</strong> ' + rewardsBits.join(', ') + '</p>' : '';
       return '<div class="order-card" style="border-top:0;padding-top:0">' +
         '<div class="order-head" style="cursor:default"><div><strong>Order #' + Store.escapeHtml(order.id) + '</strong>' +
         '<div class="meta">Placed ' + new Date(order.date).toLocaleString('en-IN') + ' · ' + Store.escapeHtml(order.customer.name) + '</div></div>' +
         '<div class="order-right"><span class="' + badgeClass + '">' + Store.escapeHtml(order.paymentMethod) + '</span><span class="order-total">' + Store.formatMoney(order.total) + '</span><span class="pay-badge">' + Store.escapeHtml(order.status) + '</span></div></div>' +
         '<div class="order-body"><div class="items"><h4>Items</h4>' + itemsHtml + '</div>' +
-        '<div class="address"><h4>Delivery to</h4><p><strong>' + Store.escapeHtml(addr.name) + '</strong></p><p>' + Store.escapeHtml(addr.address) + '</p><p>' + Store.escapeHtml(addr.city) + ', ' + Store.escapeHtml(addr.state) + ' — ' + Store.escapeHtml(addr.pincode) + '</p><p>' + Store.escapeHtml(addr.phone) + ' · ' + Store.escapeHtml(addr.email) + '</p>' +
-        '<h4 style="margin-top:12px">Payment</h4><p>' + Store.escapeHtml(order.paymentMethod) + ' — ' + Store.escapeHtml(order.paymentStatus) + (order.paymentRef ? ' · Ref: ' + Store.escapeHtml(order.paymentRef) : '') + '</p><p><strong>Amount:</strong> ' + Store.formatMoney(order.total) + '</p>' +
+        '<div class="address"><h4>Delivery to</h4><p><strong>' + Store.escapeHtml(addr.name) + '</strong></p><p>' + Store.escapeHtml(addr.address) + '</p><p>' + Store.escapeHtml(addr.city) + ', ' + Store.escapeHtml(addr.state) + ' — ' + Store.escapeHtml(addr.pincode) + '</p><p>' + Store.escapeHtml(addr.phone) + ' · ' + Store.escapeHtml(addr.email) + '</p>' + giftLine +
+        '<h4 style="margin-top:12px">Payment</h4><p>' + Store.escapeHtml(order.paymentMethod) + ' — ' + Store.escapeHtml(order.paymentStatus) + (order.paymentRef ? ' · Ref: ' + Store.escapeHtml(order.paymentRef) : '') + '</p><p><strong>Amount:</strong> ' + Store.formatMoney(order.total) + '</p>' + rewardsLine +
         '<h4 style="margin-top:12px">Timeline</h4><p><strong>Order placed:</strong> ' + new Date(order.date).toLocaleString('en-IN') + '</p>' + deliveredLine + cancelledLine +
         '</div></div></div>';
     }

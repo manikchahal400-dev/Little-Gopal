@@ -39,6 +39,17 @@
   .pay-badges span{background:#fff;border:1px solid #e5d3bd;border-radius:4px;padding:3px 7px;font-size:11px;font-weight:700;color:#8a5b3a}
   .demo-note{background:#fbf1e3;border:1px dashed #d9b98a;border-radius:7px;padding:12px 14px;font-size:12.5px;line-height:1.6;color:#6d4d3b;margin-top:14px}
   .demo-note strong{color:#54301f}
+  .gift-row{display:flex;align-items:center;gap:9px;margin-top:6px}
+  .gift-row input[type=checkbox]{width:auto}
+  .gift-row label{margin:0;font-size:14px;font-weight:600}
+  .rewards-box{background:#fbf1e3;border:1px dashed #d9b98a;border-radius:7px;padding:12px 14px;margin:14px 0;font-size:13px;color:#54301f}
+  .rewards-box strong{display:block;margin-bottom:6px;font-size:14px}
+  .rewards-box .row{display:flex;gap:8px;margin-top:8px}
+  .rewards-box .row input{flex:1;padding:9px}
+  .rewards-box .row button{border:0;background:var(--maroon);color:#fff;border-radius:5px;padding:0 12px;font-weight:700;cursor:pointer;font-size:13px}
+  .rewards-msg{font-size:12px;margin-top:6px;min-height:14px}
+  .rewards-msg.ok{color:var(--leaf)}
+  .rewards-msg.err{color:#b44b32}
   .summary-items{max-height:280px;overflow:auto;margin-bottom:10px}
   .summary-item{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid #eedfce;font-size:14px}
   .summary-item:first-child{border-top:0}
@@ -96,6 +107,11 @@
             <div><label for="pincode">Pincode</label><input id="pincode" required placeholder="6-digit pincode" pattern="[0-9]{6}" /></div>
             <div><label for="notes">Delivery note (optional)</label><input id="notes" placeholder="e.g. landmark" /></div>
           </div>
+          <div class="gift-row" style="margin-top:16px"><input type="checkbox" id="gift-wrap" /><label for="gift-wrap">Add gift wrapping (+₹39)</label></div>
+          <div id="gift-message-wrap" style="display:none">
+            <label for="gift-message">Gift message (optional)</label>
+            <textarea id="gift-message" placeholder="A short note to include with the gift" style="min-height:50px;resize:vertical" maxlength="200"></textarea>
+          </div>
         </div>
 
         <div class="card">
@@ -127,6 +143,19 @@
           <div class="summary-items" id="summary-items"></div>
           <div class="coupon-row"><input id="coupon" placeholder="Coupon code (try GOPAL10)" /><button type="button" id="coupon-apply">Apply</button></div>
           <div class="coupon-msg" id="coupon-msg"></div>
+
+          <div class="rewards-box" id="points-box" style="display:none">
+            <strong>You have <span id="points-available">0</span> points (₹<span id="points-available-worth">0</span> available)</strong>
+            <div class="row"><input id="points-redeem-input" type="number" min="50" step="10" placeholder="Points to redeem (min 50)" /><button type="button" id="points-redeem-btn">Redeem</button></div>
+            <div class="rewards-msg" id="points-msg"></div>
+          </div>
+          <div class="rewards-box">
+            <strong>Have a referral code?</strong>
+            <div class="row"><input id="referral-input" placeholder="e.g. REF-AB12CD" /><button type="button" id="referral-apply-btn">Apply</button></div>
+            <div class="rewards-msg" id="referral-msg"></div>
+          </div>
+
+          <div class="totals-line" id="giftwrap-line" style="display:none"><span>Gift wrapping</span><span id="sum-giftwrap">₹0</span></div>
           <div class="totals-line"><span>Subtotal</span><span id="sum-subtotal">₹0</span></div>
           <div class="totals-line" id="discount-line" style="display:none"><span>Discount</span><span id="sum-discount">−₹0</span></div>
           <div class="totals-line"><span>Shipping</span><span id="sum-shipping">₹0</span></div>
@@ -145,6 +174,14 @@
     var form = document.getElementById('checkout-form');
     var emptyState = document.getElementById('empty-state');
     var couponCode = '';
+    var extraDiscount = 0; // combined redeemed-points + applied-referral discount, in rupees
+    var pointsRedeemed = 0;
+    var referralCodeApplied = null;
+    var giftWrapCheckbox = document.getElementById('gift-wrap'), giftMessageWrap = document.getElementById('gift-message-wrap');
+    giftWrapCheckbox.addEventListener('change', function () {
+      giftMessageWrap.style.display = giftWrapCheckbox.checked ? 'block' : 'none';
+      renderSummary();
+    });
 
     // Address autocomplete — Indian states/UTs and major cities, so typing
     // "G" suggests Ghaziabad, Gurugram, Guwahati, etc. No external API/account needed.
@@ -224,7 +261,7 @@
     }).catch(function () { /* if this fails, COD just stays available as normal */ });
 
     function renderSummary() {
-      var totals = Store.getTotals(couponCode);
+      var totals = Store.getTotals(couponCode, { extraDiscount: extraDiscount, giftWrap: giftWrapCheckbox.checked });
       var itemsEl = document.getElementById('summary-items');
       if (!totals.cart.length) {
         emptyState.style.display = 'block';
@@ -234,6 +271,8 @@
       itemsEl.innerHTML = totals.cart.map(function (item) {
         return '<div class="summary-item"><div><strong>' + Store.escapeHtml(item.image) + ' ' + Store.escapeHtml(item.name) + '</strong><small>Qty ' + item.qty + '</small></div><span>' + Store.formatMoney(item.price * item.qty) + '</span></div>';
       }).join('');
+      document.getElementById('giftwrap-line').style.display = totals.giftWrapFee ? 'flex' : 'none';
+      if (totals.giftWrapFee) document.getElementById('sum-giftwrap').textContent = Store.formatMoney(totals.giftWrapFee);
       document.getElementById('sum-subtotal').textContent = Store.formatMoney(totals.subtotal);
       document.getElementById('sum-shipping').textContent = totals.shipping ? Store.formatMoney(totals.shipping) : 'FREE';
       document.getElementById('discount-line').style.display = totals.discount ? 'flex' : 'none';
@@ -257,10 +296,72 @@
       renderSummary();
     });
 
+    // Loyalty points: only shown/redeemable when the customer is logged in
+    // (identity comes from OTP login on account.html), since points are
+    // tracked server-side by verified email.
+    var pointsAvailable = 0;
+    var identity = Store.getIdentity();
+    if (identity && identity.identityToken) {
+      fetch('/api/rewards/balance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identityToken: identity.identityToken }) })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.ok && data.points >= 50) {
+            pointsAvailable = data.points;
+            document.getElementById('points-available').textContent = pointsAvailable;
+            document.getElementById('points-available-worth').textContent = pointsAvailable;
+            document.getElementById('points-box').style.display = 'block';
+          }
+        }).catch(function () { /* points box just stays hidden */ });
+    }
+    document.getElementById('points-redeem-btn').addEventListener('click', function () {
+      var msg = document.getElementById('points-msg');
+      var points = parseInt(document.getElementById('points-redeem-input').value, 10);
+      msg.textContent = '';
+      if (!points || points < 50) { msg.textContent = 'Enter at least 50 points.'; msg.className = 'rewards-msg err'; return; }
+      if (points > pointsAvailable) { msg.textContent = 'You only have ' + pointsAvailable + ' points.'; msg.className = 'rewards-msg err'; return; }
+      fetch('/api/rewards/redeem', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identityToken: identity.identityToken, points: points }) })
+        .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+        .then(function (res) {
+          if (!res.ok) { msg.textContent = res.data.error || 'Could not redeem points.'; msg.className = 'rewards-msg err'; return; }
+          extraDiscount += res.data.discountRupees;
+          pointsRedeemed += points;
+          pointsAvailable = res.data.points;
+          document.getElementById('points-available').textContent = pointsAvailable;
+          document.getElementById('points-available-worth').textContent = pointsAvailable;
+          document.getElementById('points-redeem-input').value = '';
+          msg.textContent = '₹' + res.data.discountRupees + ' off applied.';
+          msg.className = 'rewards-msg ok';
+          renderSummary();
+        }).catch(function () { msg.textContent = 'Could not reach the server. Please try again.'; msg.className = 'rewards-msg err'; });
+    });
+
+    var referralApplyBtn = document.getElementById('referral-apply-btn');
+    referralApplyBtn.addEventListener('click', function () {
+      var msg = document.getElementById('referral-msg');
+      var code = document.getElementById('referral-input').value.trim();
+      var email = document.getElementById('email').value.trim();
+      msg.textContent = '';
+      if (!code) { msg.textContent = 'Enter a referral code.'; msg.className = 'rewards-msg err'; return; }
+      if (!email) { msg.textContent = 'Please enter your email above first.'; msg.className = 'rewards-msg err'; return; }
+      if (referralCodeApplied) { msg.textContent = 'A referral code has already been applied.'; msg.className = 'rewards-msg err'; return; }
+      fetch('/api/rewards/referral-apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: code, newCustomerEmail: email }) })
+        .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+        .then(function (res) {
+          if (!res.ok) { msg.textContent = res.data.error || 'Could not apply that code.'; msg.className = 'rewards-msg err'; return; }
+          extraDiscount += res.data.discountRupees;
+          referralCodeApplied = code.toUpperCase();
+          msg.textContent = '₹' + res.data.discountRupees + ' off applied!';
+          msg.className = 'rewards-msg ok';
+          document.getElementById('referral-input').disabled = true;
+          referralApplyBtn.disabled = true;
+          renderSummary();
+        }).catch(function () { msg.textContent = 'Could not reach the server. Please try again.'; msg.className = 'rewards-msg err'; });
+    });
+
     var totalsSnapshot = renderSummary();
 
     function buildOrder(paymentMethod, paymentStatus, paymentRef) {
-      var totals = Store.getTotals(couponCode);
+      var totals = Store.getTotals(couponCode, { extraDiscount: extraDiscount, giftWrap: giftWrapCheckbox.checked });
       return {
         id: Store.makeOrderId(),
         date: new Date().toISOString(),
@@ -268,6 +369,11 @@
         subtotal: totals.subtotal,
         discount: totals.discount,
         coupon: couponCode || null,
+        pointsRedeemed: pointsRedeemed || 0,
+        referralCode: referralCodeApplied || null,
+        giftWrap: giftWrapCheckbox.checked,
+        giftMessage: giftWrapCheckbox.checked ? document.getElementById('gift-message').value.trim() : '',
+        giftWrapFee: totals.giftWrapFee,
         shipping: totals.shipping,
         total: totals.total,
         customer: {
@@ -291,6 +397,16 @@
       Store.placeOrder(order);
       var savedCustomer = { name: order.customer.name, email: order.customer.email, phone: order.customer.phone };
       Store.saveCustomer(savedCustomer);
+      // Award loyalty points if this customer is logged in -- based on the
+      // pre-discount subtotal, so redeeming points doesn't reduce future
+      // earning in a feedback loop.
+      var identity = Store.getIdentity();
+      if (identity && identity.identityToken) {
+        fetch('/api/rewards/earn', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identityToken: identity.identityToken, orderId: order.id, orderTotal: order.subtotal })
+        }).catch(function () { /* non-critical -- order still completes normally */ });
+      }
       location.href = 'order-success.html?order=' + encodeURIComponent(order.id);
     }
 
@@ -306,7 +422,7 @@
     form.addEventListener('submit', function (event) {
       event.preventDefault();
       if (!form.reportValidity()) return;
-      var totals = Store.getTotals(couponCode);
+      var totals = Store.getTotals(couponCode, { extraDiscount: extraDiscount, giftWrap: giftWrapCheckbox.checked });
       if (!totals.cart.length) return;
       var method = document.querySelector('input[name="pay"]:checked').value;
       var placeBtn = document.getElementById('place-order');
