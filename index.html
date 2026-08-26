@@ -207,6 +207,9 @@
       // render above uses whatever this browser already had cached, so
       // customers see the page instantly rather than waiting on a network call.
       Store.pullProductsFromServer().then(changed => { if (changed) { renderProducts(currentCategory); renderDealGrid(); } renderTrending(); });
+      // Same idea for ratings -- real, shared star ratings on every card,
+      // not just whatever this one browser happened to review.
+      Store.pullRatingSummaries().then(changed => { if (changed) renderProducts(currentCategory); });
       const searchForm = document.getElementById('site-search'), searchInput = document.getElementById('product-search'), results = document.getElementById('search-results'), resultGrid = document.getElementById('result-grid'), searchHeading = document.getElementById('search-heading');
       searchForm.addEventListener('submit', event => { event.preventDefault(); const query = searchInput.value.trim(); if (!query) return; Store.trackBeacon('search', { query }); const matches = Store.searchProducts(query); searchHeading.textContent = `Results for “${query}”`; resultGrid.innerHTML = matches.length ? matches.map(p => `<a class="result-card" href="product.html?id=${encodeURIComponent(p.id)}"><div class="result-icon">${p.icon}</div><h3>${Store.escapeHtml(p.name)}</h3><p>${Store.formatMoney(p.price)} · View product →</p></a>`).join('') : `<div class="no-results">We could not find a product for “${query}”. Try searching for tilak, poshak, singhasan, diya or jhula.</div>`; results.classList.add('show'); results.scrollIntoView({behavior:'smooth', block:'start'}); });
 

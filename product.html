@@ -3,10 +3,15 @@
 section.block{padding:10px 0 60px}section.block h2{font:700 28px "Playfair Display";margin:0 0 20px}
 .related-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}.related-card{background:#fffdf8;border-radius:7px;padding:14px;text-align:center;text-decoration:none;color:#38221f;box-shadow:0 1px 0 #e6d8c6;transition:.2s}.related-card:hover{transform:translateY(-3px);box-shadow:0 8px 16px #55352b1a}.related-card .ico{font-size:56px;height:70px;display:grid;place-items:center;overflow:hidden;border-radius:6px}.related-card h4{font:600 15px "Playfair Display";margin:10px 0 4px}.related-card .p{color:#a45331;font-weight:700;font-size:13px}.related-card.view-all{background:#f5e6d7;border:1px dashed #d9b98a;display:flex;flex-direction:column;align-items:center;justify-content:center}.related-card.view-all .ico{font-size:30px;color:#542d27}.related-card.view-all h4{color:#542d27}
 .reviews-summary{display:flex;align-items:center;gap:16px;background:#fffdf8;border:1px solid #ead8c5;border-radius:8px;padding:18px 22px;margin-bottom:24px}.reviews-summary .avg{font:700 40px "Playfair Display";color:#542d27}.reviews-summary .stars{font-size:20px}.review-card{border-top:1px solid #ead8c5;padding:16px 0}.review-card:first-child{border-top:0}.review-card .who{font-weight:700;font-size:14px}.review-card .stars{font-size:14px;margin:3px 0 6px}.review-card p{margin:0;color:#5a423d;font-size:14px;line-height:1.6}.review-card time{font-size:11px;color:#a08b81}
-.review-form{background:#fffdf8;border:1px solid #ead8c5;border-radius:8px;padding:20px;margin-top:24px}.review-form h3{margin:0 0 14px;font:700 19px "Playfair Display"}.review-form label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}.review-form input,.review-form textarea{width:100%;box-sizing:border-box;border:1px solid #d9c3aa;border-radius:5px;padding:10px;font:14px "DM Sans"}.star-picker{font-size:26px;cursor:pointer;letter-spacing:4px}.star-picker span{color:#ddd0bd}.star-picker span.on{color:#d59d36}.review-form button{border:0;background:#542d27;color:#fff;padding:12px 18px;border-radius:4px;font-weight:700;margin-top:14px;cursor:pointer}.no-reviews{color:#8a6a61;font-size:14px}
+.review-form{background:#fffdf8;border:1px solid #ead8c5;border-radius:8px;padding:20px;margin-top:24px}.review-form h3{margin:0 0 14px;font:700 19px "Playfair Display"}.review-form label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}.review-form input,.review-form textarea{width:100%;box-sizing:border-box;border:1px solid #d9c3aa;border-radius:5px;padding:10px;font:14px "DM Sans"}.star-picker{font-size:26px;cursor:pointer;letter-spacing:4px}.star-picker span{color:#ddd0bd}.star-picker span.on{color:#d59d36}.review-form button{border:0;background:#542d27;color:#fff;padding:12px 18px;border-radius:4px;font-weight:700;margin-top:14px;cursor:pointer}.review-form button:disabled{opacity:.6;cursor:not-allowed}.no-reviews{color:#8a6a61;font-size:14px}
+.review-card .photos{display:flex;gap:8px;margin:8px 0}.review-card .photos img{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid #ead8c5;cursor:zoom-in}
+.review-photo-input{display:inline-block;border:1px dashed #c9ac8c;border-radius:5px;padding:9px 14px;font-size:13px;font-weight:700;color:#542d27;cursor:pointer;margin-top:4px}
+.review-photo-preview{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.review-photo-preview .thumb{position:relative;width:56px;height:56px}.review-photo-preview img{width:100%;height:100%;object-fit:cover;border-radius:5px;border:1px solid #ead8c5}.review-photo-preview button{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:0;background:#542d27;color:#fff;font-size:11px;line-height:1;cursor:pointer}
+.review-msg{font-size:12.5px;margin-top:8px;min-height:14px}.review-msg.err{color:#b44b32}.review-msg.ok{color:#537048}
 @media(max-width:700px){.product{grid-template-columns:1fr;gap:28px;padding:35px 0}.image{min-height:280px;font-size:130px}.product h1{font-size:38px}.related-grid{grid-template-columns:repeat(2,1fr)}}</style></head><body><header class="wrap top"><a class="brand" href="index.html"><img src="logo.jpeg" alt="" style="height:42px;width:42px;object-fit:cover;border-radius:50%;vertical-align:middle;margin-right:8px">Little <span>Gopal</span></a><a class="back" href="index.html#bestsellers">← Continue shopping</a></header><main class="wrap product"><div class="image" id="image"><button class="wish" id="wish-btn" aria-label="Save to wishlist">♡</button><span id="image-visual">🛍️</span></div><div><div class="tag">Little Gopal collection</div><h1 id="name">Divine product</h1><div class="rating-line"><span class="stars" id="rating-stars"></span><span id="rating-text">No reviews yet</span></div><div class="price" id="price">₹0</div><p class="desc">A beautiful essential for the loving seva of Krishna ji and Radha Rani. Chosen thoughtfully for daily darshan and festive celebrations.</p><div class="stock" id="stock">● In stock — ready to ship</div><div class="choice" id="size-choice" hidden><strong>Choose size</strong><div id="size-options"></div></div><div class="choice" id="color-choice" hidden><strong>Choose colour</strong><div id="color-options"></div></div><button class="add" id="add">Add to cart</button><button class="buy-now" id="buy-now">Buy now</button><div class="trust">✓ Pan-India delivery<br>✓ Free shipping above ₹999<br>✓ Easy support on WhatsApp</div></div></main>
 <section class="wrap block" id="related-section" hidden><h2>You might also like</h2><div class="related-grid" id="related-grid"></div></section>
-<section class="wrap block"><h2>Customer reviews</h2><div id="reviews-summary-wrap"></div><div id="reviews-list"></div><form class="review-form" id="review-form"><h3>Write a review</h3><label>Your rating</label><div class="star-picker" id="star-picker"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div><input type="hidden" id="review-rating" value="5"><label for="review-name">Your name</label><input id="review-name" placeholder="e.g. Priya S." required><label for="review-comment">Your review</label><textarea id="review-comment" rows="3" placeholder="Share your experience with this product" required></textarea><button type="submit">Submit review</button></form></section>
+<section class="wrap block" id="recent-section" hidden><h2>Recently viewed</h2><div class="related-grid" id="recent-grid"></div></section>
+<section class="wrap block"><h2>Customer reviews</h2><div id="reviews-summary-wrap"></div><div id="reviews-list"></div><form class="review-form" id="review-form"><h3>Write a review</h3><label>Your rating</label><div class="star-picker" id="star-picker"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div><input type="hidden" id="review-rating" value="5"><label for="review-name">Your name</label><input id="review-name" placeholder="e.g. Priya S." required><label for="review-comment">Your review</label><textarea id="review-comment" rows="3" placeholder="Share your experience with this product" required></textarea><label>Add photos (optional)</label><label class="review-photo-input" for="review-photos">📷 Add photos of the product</label><input type="file" id="review-photos" accept="image/*" multiple hidden><div class="review-photo-preview" id="review-photo-preview"></div><button type="submit" id="review-submit">Submit review</button><div class="review-msg" id="review-msg"></div></form></section>
 <script src="cart.js"></script><script>
 const Store = window.LittleGopalStore;
 (async function () {
@@ -23,6 +28,7 @@ if (!product) {
   document.querySelectorAll('section.block').forEach(s => s.hidden = true);
 } else {
   Store.trackBeacon('product_view', { productId: product.id });
+  Store.trackRecentlyViewed(product.id);
   document.title = `${product.name} | Little Gopal`;
   document.getElementById('name').textContent = product.name;
   document.getElementById('image-visual').innerHTML = Store.visualHtml(product);
@@ -73,6 +79,16 @@ if (!product) {
       `<a class="related-card view-all" href="collection.html?category=${encodeURIComponent(product.category)}"><div class="ico">→</div><h4>View all ${categoryName}</h4></a>`;
   }
 
+  // Recently viewed -- client-side only (per browser), same as Amazon's
+  // "recently viewed items" row. Read before trackRecentlyViewed() above
+  // updates the list, so the product being viewed right now isn't shown
+  // among its own "recently viewed" -- getRecentlyViewed already excludes it.
+  const recent = Store.getRecentlyViewed(product.id, 8);
+  if (recent.length) {
+    document.getElementById('recent-section').hidden = false;
+    document.getElementById('recent-grid').innerHTML = recent.map(p => `<a class="related-card" href="product.html?id=${encodeURIComponent(p.id)}"><div class="ico">${Store.visualHtml(p)}</div><h4>${Store.escapeHtml(p.name)}</h4><div class="p">${Store.formatMoney(p.price)}</div></a>`).join('');
+  }
+
   // Reviews
   function renderReviews() {
     const reviews = Store.getReviews(product.id);
@@ -81,22 +97,61 @@ if (!product) {
     document.getElementById('rating-text').textContent = summary.count ? `${summary.average} out of 5 (${summary.count} review${summary.count === 1 ? '' : 's'})` : 'No reviews yet — be the first!';
     const summaryWrap = document.getElementById('reviews-summary-wrap');
     summaryWrap.innerHTML = summary.count ? `<div class="reviews-summary"><div class="avg">${summary.average}</div><div><div class="stars">${Store.starsHtml(summary.average)}</div><div style="color:#8a6a61;font-size:13px">Based on ${summary.count} review${summary.count === 1 ? '' : 's'}</div></div></div>` : '';
-    document.getElementById('reviews-list').innerHTML = reviews.length ? reviews.map(r => `<div class="review-card"><div class="who">${Store.escapeHtml(r.name)}</div><div class="stars">${Store.starsHtml(r.rating)}</div><p>${Store.escapeHtml(r.comment)}</p><time>${new Date(r.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}</time></div>`).join('') : '<p class="no-reviews">No reviews yet for this product. Share your experience below!</p>';
+    document.getElementById('reviews-list').innerHTML = reviews.length ? reviews.map(r => `<div class="review-card"><div class="who">${Store.escapeHtml(r.name)}</div><div class="stars">${Store.starsHtml(r.rating)}</div>${r.images && r.images.length ? `<div class="photos">${r.images.map(img => `<img src="${img}" alt="">`).join('')}</div>` : ''}<p>${Store.escapeHtml(r.comment)}</p><time>${new Date(r.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}</time></div>`).join('') : '<p class="no-reviews">No reviews yet for this product. Share your experience below!</p>';
   }
   renderReviews();
+  // Refresh with the real, shared reviews from every customer's device --
+  // the render above is just this browser's local cache, for instant paint.
+  Store.pullReviewsFromServer(product.id).then(changed => { if (changed) renderReviews(); });
 
   const starPicker = document.getElementById('star-picker'), ratingInput = document.getElementById('review-rating');
   function paintStars(val) { starPicker.querySelectorAll('span').forEach(s => s.classList.toggle('on', +s.dataset.v <= val)); }
   paintStars(5);
   starPicker.addEventListener('click', e => { const s = e.target.closest('span'); if (!s) return; ratingInput.value = s.dataset.v; paintStars(+s.dataset.v); });
 
-  document.getElementById('review-form').addEventListener('submit', e => {
+  // Review photo upload -- same client-side compress-before-upload pattern
+  // used for return-request photos and admin product images.
+  let pendingReviewImages = [];
+  const reviewPhotoInput = document.getElementById('review-photos'), reviewPhotoPreview = document.getElementById('review-photo-preview');
+  function renderReviewPhotoPreview() {
+    reviewPhotoPreview.innerHTML = pendingReviewImages.map((img, i) => `<div class="thumb"><img src="${img}" alt=""><button type="button" data-i="${i}" aria-label="Remove photo">✕</button></div>`).join('');
+  }
+  reviewPhotoPreview.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-i]');
+    if (!btn) return;
+    pendingReviewImages.splice(+btn.dataset.i, 1);
+    renderReviewPhotoPreview();
+  });
+  reviewPhotoInput.addEventListener('change', async () => {
+    const files = Array.from(reviewPhotoInput.files || []).slice(0, 3 - pendingReviewImages.length);
+    for (const file of files) {
+      try { pendingReviewImages.push(await Store.compressImage(file, 700, 0.7)); } catch (e) { /* skip files that fail to read */ }
+    }
+    reviewPhotoInput.value = '';
+    renderReviewPhotoPreview();
+  });
+
+  const reviewForm = document.getElementById('review-form'), reviewSubmitBtn = document.getElementById('review-submit'), reviewMsg = document.getElementById('review-msg');
+  reviewForm.addEventListener('submit', async e => {
     e.preventDefault();
+    reviewMsg.textContent = ''; reviewMsg.className = 'review-msg';
     const name = document.getElementById('review-name').value.trim();
     const comment = document.getElementById('review-comment').value.trim();
-    Store.addReview(product.id, { name, rating: +ratingInput.value, comment });
+    reviewSubmitBtn.disabled = true;
+    reviewSubmitBtn.textContent = 'Submitting…';
+    const result = await Store.addReview(product.id, { name, rating: +ratingInput.value, comment, images: pendingReviewImages });
+    reviewSubmitBtn.disabled = false;
+    reviewSubmitBtn.textContent = 'Submit review';
+    if (!result.ok) {
+      reviewMsg.textContent = result.error || 'Your review was saved on this device, but could not be shared yet. Please try again later.';
+      reviewMsg.className = 'review-msg err';
+    } else {
+      reviewMsg.textContent = 'Thank you — your review has been posted!';
+      reviewMsg.className = 'review-msg ok';
+    }
     e.target.reset();
     ratingInput.value = 5; paintStars(5);
+    pendingReviewImages = []; renderReviewPhotoPreview();
     renderReviews();
   });
 }

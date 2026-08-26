@@ -38,6 +38,7 @@
     price.addEventListener('input', () => {price.dataset.touched='1'; selected.textContent = format(price.value)}); document.getElementById('apply-filter').addEventListener('click', filterProducts); document.getElementById('clear-filter').addEventListener('click', () => { price.value = price.max; delete price.dataset.touched; filterProducts(); });
     // Pull the latest shared catalog and redraw once it arrives.
     Store.pullProductsFromServer().then(changed => { if (changed) renderBeauty(); });
+    Store.pullRatingSummaries().then(changed => { if (changed) renderBeauty(); });
     products.addEventListener('click', event => {
       const wishBtn = event.target.closest('.wish');
       const addBtn = event.target.closest('.add-btn');

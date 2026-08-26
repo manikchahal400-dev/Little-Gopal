@@ -44,6 +44,7 @@
     // and redraw once it arrives -- initial render above uses whatever this
     // browser already had cached, so the page shows instantly either way.
     Store.pullProductsFromServer().then(changed => { if (changed) renderCollection(); });
+    Store.pullRatingSummaries().then(changed => { if (changed) renderCollection(); });
     products.addEventListener('click', event => {
       const wishBtn = event.target.closest('.wish');
       const addBtn = event.target.closest('.add-btn');

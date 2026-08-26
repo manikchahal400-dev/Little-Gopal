@@ -27,6 +27,8 @@
   var REVIEWS_KEY = 'littleGopalReviews';
   var RETURN_REQUESTS_KEY = 'littleGopalReturnRequests';
   var IDENTITY_KEY = 'littleGopalIdentity';
+  var RATING_SUMMARY_KEY = 'littleGopalRatingSummary';
+  var RECENTLY_VIEWED_KEY = 'littleGopalRecentlyViewed';
   var COUPONS = { GOPAL10: 0.10 };
   var FREE_SHIPPING_FROM = 999;
   var SHIPPING_FEE = 49;
@@ -287,24 +289,75 @@
   }
 
   // --- Reviews & ratings ---
+  // Reviews live in shared server storage (api/reviews) so a review one
+  // customer writes is actually visible to every other customer, on their
+  // own device -- not just cached here for instant/offline-first display.
+  // getReviews()/getRatingSummary() stay synchronous, reading whatever this
+  // browser has cached, so pages render instantly; pullReviewsFromServer()
+  // and pullRatingSummaries() refresh that cache from the real shared data.
   function getAllReviews() { return readJSON(REVIEWS_KEY, {}); }
   function getReviews(productId) { return getAllReviews()[productId] || []; }
+  function pullReviewsFromServer(productId) {
+    return fetch('/api/reviews/get', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: productId })
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !data.ok) return false;
+        var all = getAllReviews();
+        all[productId] = data.reviews;
+        localStorage.setItem(REVIEWS_KEY, JSON.stringify(all));
+        return true;
+      }).catch(function () { return false; });
+  }
+  function pullRatingSummaries() {
+    return fetch('/api/reviews/summary').then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !data.ok) return false;
+        localStorage.setItem(RATING_SUMMARY_KEY, JSON.stringify(data.summary || {}));
+        return true;
+      }).catch(function () { return false; });
+  }
   function addReview(productId, review) {
-    var all = getAllReviews();
-    all[productId] = all[productId] || [];
-    all[productId].unshift({
+    var entry = {
       name: review.name || 'A devotee',
       rating: Math.max(1, Math.min(5, Math.round(review.rating) || 5)),
       comment: review.comment || '',
+      images: review.images || [],
       date: new Date().toISOString()
-    });
+    };
+    // Optimistic local update so the reviewer sees their own review right
+    // away even before/if the server round-trip finishes.
+    var all = getAllReviews();
+    all[productId] = all[productId] || [];
+    all[productId].unshift(entry);
     localStorage.setItem(REVIEWS_KEY, JSON.stringify(all));
+    return fetch('/api/reviews/add', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId: productId, name: entry.name, rating: entry.rating, comment: entry.comment, images: entry.images })
+    }).then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (data) { return { ok: !!(data && data.ok), error: data && data.error }; })
+      .catch(function () { return { ok: false, error: 'Could not reach the server. Your review was saved on this device only.' }; });
   }
   function getRatingSummary(productId) {
+    var cached = readJSON(RATING_SUMMARY_KEY, null);
+    if (cached && cached[productId]) return cached[productId];
     var reviews = getReviews(productId);
     if (!reviews.length) return { count: 0, average: 0 };
     var sum = reviews.reduce(function (s, r) { return s + r.rating; }, 0);
     return { count: reviews.length, average: Math.round((sum / reviews.length) * 10) / 10 };
+  }
+
+  // --- Recently viewed (client-side only, per browser) ---
+  function trackRecentlyViewed(productId) {
+    var list = readJSON(RECENTLY_VIEWED_KEY, []).filter(function (id) { return id !== productId; });
+    list.unshift(productId);
+    if (list.length > 12) list.length = 12;
+    localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(list));
+  }
+  function getRecentlyViewed(excludeId, limit) {
+    var ids = readJSON(RECENTLY_VIEWED_KEY, []).filter(function (id) { return id !== excludeId; });
+    var out = ids.map(function (id) { return getProductById(id); }).filter(Boolean);
+    return out.slice(0, limit || 8);
   }
   // Resizes/compresses an uploaded image file client-side (no server) and
   // resolves with a JPEG data URI, so product photos stay small enough for
@@ -582,6 +635,8 @@
     getProductById: getProductById, getProductByName: getProductByName, searchProducts: searchProducts,
     getWishlist: getWishlist, isWishlisted: isWishlisted, toggleWishlist: toggleWishlist,
     getReviews: getReviews, addReview: addReview, getRatingSummary: getRatingSummary, starsHtml: starsHtml,
+    pullReviewsFromServer: pullReviewsFromServer, pullRatingSummaries: pullRatingSummaries,
+    trackRecentlyViewed: trackRecentlyViewed, getRecentlyViewed: getRecentlyViewed,
     visualHtml: visualHtml, compressImage: compressImage, trackBeacon: trackBeacon
   };
 })();
